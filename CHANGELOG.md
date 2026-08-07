@@ -35,5 +35,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - 40+ tables across all groups (niches, Pinterest accounts/boards/pins, articles, categories, tags, affiliate, SEO, traffic, analytics, revenue, click tracking, users, admin, roles, permissions, automation, scheduler, queue, logs, audit, notifications, media, settings) with purpose, keys, fields, indexes, relationships, ownership.
   - Mandatory niche/Pinterest-account isolation rules, partition/archive/backup/caching/search/analytics strategies, and read/write/delete/restore flows.
   - Verification that no AI Content OS data lives in this database.
+- Added the frozen API contract specification (`docs/architecture/12-api-contracts.md`):
+  - AI OS Bridge contracts (Content Intake, Job Request/Status, SEO Metadata, Pinterest Assets, Analytics Insights, Heartbeat).
+  - Authentication, versioning, error model, rate limits, retry policy, idempotency, webhook and event contracts.
+  - Locked rule: website never calls Gemini/OpenAI/Claude directly; only Website → AI OS Bridge → AI OS.
+- Added the permanent UI/UX design system (`docs/architecture/13-ui-ux-design-system.md`):
+  - Design philosophy, brand identity, color system, typography, icons, layout, grid, spacing, component and responsive rules.
+  - All 22 pages with wireframes, user journeys, components, and SEO/Pinterest/affiliate/analytics importance.
+  - Shared components, accessibility (WCAG 2.1 AA), SEO layout, Core Web Vitals budgets, device experience, and no-AI-in-UI verification.
   - Closed-loop definition, locked boundaries, prohibitions, and amendment/ratification process.
 

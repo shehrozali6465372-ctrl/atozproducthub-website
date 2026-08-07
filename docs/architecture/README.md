@@ -112,6 +112,8 @@ Readers, crawlers, and the future mobile app reach the website through the CDN e
 | [09-website-architecture-contract.md](09-website-architecture-contract.md) | **Binding contract:** locked boundary, closed loop, prohibitions, amendment process |
 | [10-technology-stack.md](10-technology-stack.md) | **Permanent technology specification:** frozen stack for all 11 areas, justifications, final stack table |
 | [11-database-architecture.md](11-database-architecture.md) | **Permanent database blueprint:** stores, ERD, 40+ tables, tenancy isolation, strategies, flows |
+| [12-api-contracts.md](12-api-contracts.md) | **Frozen API contracts:** AI OS Bridge contracts, webhooks, events, auth, versioning, rate limits, retries, idempotency |
+| [13-ui-ux-design-system.md](13-ui-ux-design-system.md) | **Permanent UI/UX design system:** brand, visual language, components, all 22 pages, a11y, SEO/CWV |
 
 ## 8. Conventions used in this document set
 
