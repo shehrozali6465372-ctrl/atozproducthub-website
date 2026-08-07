@@ -122,6 +122,21 @@ The complete website architecture (business layer only) is maintained in [docs/a
 
 ---
 
+## Development (M1 Foundation)
+
+Prerequisites: Python 3.11+, Docker, Docker Compose.
+
+```bash
+make setup        # create .venv and install foundation dependencies
+make check        # lint, format check, typecheck, no-AI guard, tests
+make docker-up    # build and start api, postgres, redis (compose)
+make health       # GET /health
+```
+
+The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation) is complete, M2+ planned.
+
+---
+
 ## License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for details.

@@ -58,3 +58,11 @@ venv/
 .cache/
 .tmp/
 .eslintcache
+
+# Python venv and caches
+.venv/
+*.egg-info/
+.coverage
+htmlcov/
+.ruff_cache/
+.mypy_cache/

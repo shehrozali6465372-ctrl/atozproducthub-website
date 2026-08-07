@@ -1,0 +1,20 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["apps/api/src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "UP", "B", "I"]
+ignore = ["B008"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["apps/api/tests"]
+addopts = "-q"
+
+[tool.mypy]
+python_version = "3.12"
+files = ["apps/api/src/atoz_api"]
+warn_unused_configs = true

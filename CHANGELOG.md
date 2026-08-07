@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-08-07
+
+### Added
+
+- Implemented M1 foundation setup (first code):
+  - Monorepo scaffold per Folder Blueprint §3 (apps, services, libs, config, infra, assets, pipelines, tests, tools, docs) with README stubs.
+  - Root tooling: `Makefile`, `pyproject.toml` (ruff, mypy, pytest), `.editorconfig`, `.env.example`, `package.json`, updated `.gitignore` and `.dockerignore`.
+  - API gateway foundation (`apps/api`, FastAPI): pydantic-settings configuration with environment loading, structured JSON logging, RFC 7807 problem+json error handling, request-context middleware (X-Request-ID), and the `/health` endpoint.
+  - Docker: `infra/docker/api.Dockerfile` and `infra/docker/compose.yml` (api, postgres, redis) with healthchecks.
+  - GitHub Actions CI: quality (ruff lint, format check, mypy), tests (pytest), Docker build + compose smoke, gitleaks secret scan.
+  - No-AI guard (`tools/dev/check-no-ai.sh`) enforcing Website Architecture Contract §4.2 and Folder Blueprint §6.1.
+- M1 contains no business logic: no Pinterest, affiliate, SEO, analytics, authentication, or AI functionality.
+
 ### Added
 
 - Initial repository creation with professional documentation:
