@@ -30,5 +30,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Frozen stack for frontend, backend, database, infrastructure, SEO, Pinterest, affiliate, analytics, security, admin dashboard, and AI OS Bridge.
   - Every technology justified: why selected, alternatives rejected, scalability, cost, free tier, production readiness.
   - Final stack table (Technology | Purpose | Status | Future Replacement) and forbidden-technology boundary.
+- Added the permanent production database blueprint (`docs/architecture/11-database-architecture.md`):
+  - Database philosophy, store topology (PostgreSQL, ClickHouse, Redis, Typesense, R2), and ERD.
+  - 40+ tables across all groups (niches, Pinterest accounts/boards/pins, articles, categories, tags, affiliate, SEO, traffic, analytics, revenue, click tracking, users, admin, roles, permissions, automation, scheduler, queue, logs, audit, notifications, media, settings) with purpose, keys, fields, indexes, relationships, ownership.
+  - Mandatory niche/Pinterest-account isolation rules, partition/archive/backup/caching/search/analytics strategies, and read/write/delete/restore flows.
+  - Verification that no AI Content OS data lives in this database.
   - Closed-loop definition, locked boundaries, prohibitions, and amendment/ratification process.
 

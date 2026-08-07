@@ -111,6 +111,7 @@ Readers, crawlers, and the future mobile app reach the website through the CDN e
 | [08-deployment-strategy.md](08-deployment-strategy.md) | Environments, CI/CD, rollout, scaling, DR |
 | [09-website-architecture-contract.md](09-website-architecture-contract.md) | **Binding contract:** locked boundary, closed loop, prohibitions, amendment process |
 | [10-technology-stack.md](10-technology-stack.md) | **Permanent technology specification:** frozen stack for all 11 areas, justifications, final stack table |
+| [11-database-architecture.md](11-database-architecture.md) | **Permanent database blueprint:** stores, ERD, 40+ tables, tenancy isolation, strategies, flows |
 
 ## 8. Conventions used in this document set
 
