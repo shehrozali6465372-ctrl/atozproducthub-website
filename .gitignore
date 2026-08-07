@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build outputs
+dist/
+build/
+out/
+coverage/
+
+# Static site / framework outputs (enable when a stack is chosen)
+# .next/
+# .nuxt/
+# public/_astro/
+# _site/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors and IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python tooling (if scripting is added later)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Local databases
+*.sqlite
+*.sqlite3
+*.db
+
+# Misc
+.cache/
+.tmp/
+.eslintcache
