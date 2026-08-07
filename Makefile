@@ -27,7 +27,10 @@ typecheck:
 no-ai:
 	bash tools/dev/check-no-ai.sh
 
-check: lint format-check typecheck no-ai test
+contracts:
+	bash tools/dev/check-contracts.sh
+
+check: lint format-check typecheck no-ai contracts test
 
 docker-up:
 	$(COMPOSE) up -d --build

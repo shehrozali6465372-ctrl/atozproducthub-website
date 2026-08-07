@@ -29,6 +29,8 @@ jobs:
         run: mypy
       - name: No-AI guard
         run: bash tools/dev/check-no-ai.sh
+      - name: Contract validation
+        run: bash tools/dev/check-contracts.sh
       - name: Dependency vulnerabilities (pip-audit)
         run: pip-audit
 
