@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-07
+
+### Added
+
+- Implemented M2 frontend foundation (first frontend code):
+  - ADR-0001: accepted a shared design-system workspace (`libs/design-system`, package `@atoz/design-system`) with the required ADR + contract-compliance review per Folder Blueprint §6.4.
+  - `libs/design-system`: design tokens (color/typography/spacing/breakpoints per UI/UX Design System §3–§8, Tailwind v4 `@theme` with runtime light/dark variables), theme provider (light/dark/system, persisted, pre-paint script), and core components (Button, Badge, Card, Container, Header, Footer, Hero, Prose, Breadcrumbs, Pagination, Form fields, Search, Filters, Table with mobile card-list fallback, Notifications, EmptyState, DisclosureBadge, KPI cards, ContentCard, Avatar, Recharts chart wrappers with accessible data-table fallbacks).
+  - `apps/web` (@atoz/web): public website scaffold (Next.js App Router, TypeScript strict, Tailwind) with wireframe pages for all 15 public pages from Design System §11.2 (home, article, category, tag, search, product, Pinterest landing, affiliate collection, about, contact, privacy, terms, disclaimer, sitemap, 404) rendered from a typed API-client stub over static mock data.
+  - `apps/admin` (@atoz/admin): admin dashboard scaffold with app-shell (sidebar + topbar) and wireframe pages for all 7 admin pages (login, dashboard, analytics, revenue, Pinterest, automation, settings), all `noindex`.
+  - Workspace tooling: root `package.json` workspaces (`apps/*`, `libs/design-system`), per-app ESLint (eslint-config-next flat), `tsc --noEmit` typecheck, `next build` for both apps, vitest + @testing-library/react + axe-core tests (21 passing, WCAG 2.1 AA checks).
+  - CI: new `frontend` job (npm ci, lint, typecheck, build, tests) on Node 22; existing Python jobs unchanged.
+  - `Makefile`: added `fe-install`, `fe-lint`, `fe-typecheck`, `fe-build`, `fe-test`, `fe-check` targets.
+- M2 contains no business features: no articles CMS, affiliate engine, Pinterest API, SEO service, analytics collection, authentication, or AI functionality. All content is static wireframe mock data; real data arrives in Phases 3–11 through the API gateway and `libs/contracts`.
+
 ## [0.1.0] - 2026-08-07
 
 ### Added

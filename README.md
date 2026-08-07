@@ -122,9 +122,11 @@ The complete website architecture (business layer only) is maintained in [docs/a
 
 ---
 
-## Development (M1 Foundation)
+## Development
 
-Prerequisites: Python 3.11+, Docker, Docker Compose.
+Prerequisites: Python 3.11+, Node.js 20+, Docker, Docker Compose.
+
+Backend / API gateway (M1):
 
 ```bash
 make setup        # create .venv and install foundation dependencies
@@ -133,7 +135,19 @@ make docker-up    # build and start api, postgres, redis (compose)
 make health       # GET /health
 ```
 
-The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation) is complete, M2+ planned.
+Frontend (M2 — web + admin wireframes on the shared design system):
+
+```bash
+npm ci            # install workspace dependencies (lockfile committed)
+npm run dev:web   # public website  -> http://localhost:3000
+npm run dev:admin # admin dashboard -> http://localhost:3001
+npm run lint      # eslint (all workspaces)
+npm run typecheck # tsc --noEmit (all workspaces)
+npm test          # vitest + axe a11y tests (all workspaces)
+npm run build     # next build (web + admin)
+```
+
+The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation) and M2 (frontend foundation) are complete, M3 (backend + database) is next.
 
 ---
 

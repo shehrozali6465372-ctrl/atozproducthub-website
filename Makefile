@@ -44,3 +44,22 @@ health:
 clean:
 	rm -rf .venv .pytest_cache .ruff_cache .mypy_cache
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
+
+.PHONY: fe-install fe-lint fe-typecheck fe-build fe-test fe-check
+
+fe-install:
+	npm install
+
+fe-lint:
+	npm run lint
+
+fe-typecheck:
+	npm run typecheck
+
+fe-build:
+	npm run build
+
+fe-test:
+	npm test
+
+fe-check: fe-lint fe-typecheck fe-test

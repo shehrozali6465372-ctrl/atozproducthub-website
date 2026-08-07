@@ -1,10 +1,20 @@
 {
   "name": "atozproducthub-website",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
+  "description": "AtozProductHub website — business layer only (monorepo root: dev tooling only).",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "libs/design-system"
   ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace @atoz/web",
+    "dev:admin": "npm run dev --workspace @atoz/admin",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
   "engines": {
     "node": ">=20"
   }

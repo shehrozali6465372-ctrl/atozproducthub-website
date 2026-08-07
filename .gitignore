@@ -9,7 +9,7 @@ out/
 coverage/
 
 # Static site / framework outputs (enable when a stack is chosen)
-# .next/
+.next/
 # .nuxt/
 # public/_astro/
 # _site/
@@ -58,6 +58,8 @@ venv/
 .cache/
 .tmp/
 .eslintcache
+*.tsbuildinfo
+.vercel/
 
 # Python venv and caches
 .venv/
