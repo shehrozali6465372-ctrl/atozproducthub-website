@@ -63,7 +63,7 @@ jobs:
         run: npm run lint
       - name: Type check (tsc)
         run: npm run typecheck
-      - name: Build (next build: web + admin)
+      - name: "Build (next build: web + admin)"
         run: npm run build
       - name: Tests (vitest + axe)
         run: npm test
