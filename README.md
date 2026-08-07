@@ -15,6 +15,7 @@ This repository is **exclusively** for the AtozProductHub website — the busine
 7. ["No Duplicate Features" Policy](#7-no-duplicate-features-policy)
 8. [Development Rules](#8-development-rules)
 9. [Future Roadmap](#9-future-roadmap)
+10. [Architecture](#architecture)
 
 ---
 
@@ -112,6 +113,12 @@ The website is the face of the business: where readers land, where products are 
 - **Phase 7 — Automation:** business workflow automation (notifications, reporting, publishing pipelines).
 - **Phase 8 — Admin dashboard:** operations dashboard for content, products, and metrics.
 - **Ongoing — AI OS integration:** connect to the AI OS through documented APIs only.
+
+---
+
+## Architecture
+
+The complete website architecture (business layer only) is maintained in [docs/architecture](docs/architecture/README.md). It covers system layers, module boundaries, data flow, API flow, responsibilities, security boundaries, and deployment strategy — with the Universal AI Content Operating System treated strictly as an external system accessed only through the AI OS Bridge.
 
 ---
 

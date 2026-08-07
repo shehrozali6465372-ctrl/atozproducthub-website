@@ -14,3 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - `.gitignore` baseline for a clean web-project workspace.
   - `CONTRIBUTING.md` with contribution guidelines and repository boundaries.
 - Repository governance: business-layer only, fully separate from the Universal AI Content Operating System.
+- Added the complete website architecture documentation set under `docs/architecture/`:
+  - Overview, design principles, system context, and scale targets.
+  - Folder structure, system layers, and module boundaries.
+  - Data flow, API flow, responsibilities, security boundaries, and deployment strategy.
+  - Boundaries with the Universal AI Content Operating System defined for every layer and module.
+
