@@ -26,5 +26,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Category map (frontend, backend, database, APIs, documentation, configuration, infrastructure, assets, SEO, affiliate, Pinterest, analytics, admin, automation, testing).
   - Repository conventions (naming, imports, dependencies) and technology placement (Next.js, FastAPI, PostgreSQL, Redis, Docker, CI/CD, AI OS Bridge).
   - Verification against the Website Architecture Contract and no-AI-duplication checks.
+- Added the permanent technology specification (`docs/architecture/10-technology-stack.md`):
+  - Frozen stack for frontend, backend, database, infrastructure, SEO, Pinterest, affiliate, analytics, security, admin dashboard, and AI OS Bridge.
+  - Every technology justified: why selected, alternatives rejected, scalability, cost, free tier, production readiness.
+  - Final stack table (Technology | Purpose | Status | Future Replacement) and forbidden-technology boundary.
   - Closed-loop definition, locked boundaries, prohibitions, and amendment/ratification process.
 
