@@ -43,5 +43,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Design philosophy, brand identity, color system, typography, icons, layout, grid, spacing, component and responsive rules.
   - All 22 pages with wireframes, user journeys, components, and SEO/Pinterest/affiliate/analytics importance.
   - Shared components, accessibility (WCAG 2.1 AA), SEO layout, Core Web Vitals budgets, device experience, and no-AI-in-UI verification.
+- Added the master implementation roadmap (`docs/architecture/14-implementation-roadmap.md`):
+  - 13 phases (Repository Setup → Production Deployment) with goal, scope, deliverables, dependencies, complexity, risk, success criteria.
+  - Module details per phase: files, folders, dependencies, database tables, API contracts, future integrations, testing.
+  - Dependency-ordered implementation sequence, milestone roadmap M1–M8 with Definition of Done for each.
   - Closed-loop definition, locked boundaries, prohibitions, and amendment/ratification process.
 
