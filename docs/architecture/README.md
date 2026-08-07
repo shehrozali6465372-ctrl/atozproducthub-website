@@ -101,7 +101,7 @@ Readers, crawlers, and the future mobile app reach the website through the CDN e
 
 | Document | Covers |
 |----------|--------|
-| [01-folder-structure.md](01-folder-structure.md) | Planned repository layout, conventions, responsibility mapping |
+| [01-folder-structure.md](01-folder-structure.md) | **Permanent folder blueprint:** complete tree, folder dictionary, conventions, technology placement, contract verification |
 | [02-system-layers.md](02-system-layers.md) | The seven layers with purpose, ownership, and boundaries |
 | [03-module-boundaries.md](03-module-boundaries.md) | Bounded contexts, what each owns/never owns, dependencies |
 | [04-data-flow.md](04-data-flow.md) | Content, pin, affiliate, analytics, and admin data flows |

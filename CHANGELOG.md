@@ -21,5 +21,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Boundaries with the Universal AI Content Operating System defined for every layer and module.
 - Added the binding Website Architecture Contract (`docs/architecture/09-website-architecture-contract.md`):
   - Locked statement: the website is a business platform only; all intelligence belongs to the AI OS.
+- Expanded `01-folder-structure.md` into the permanent project folder blueprint:
+  - Complete directory tree with every folder's purpose, responsibility, owner, and future modules.
+  - Category map (frontend, backend, database, APIs, documentation, configuration, infrastructure, assets, SEO, affiliate, Pinterest, analytics, admin, automation, testing).
+  - Repository conventions (naming, imports, dependencies) and technology placement (Next.js, FastAPI, PostgreSQL, Redis, Docker, CI/CD, AI OS Bridge).
+  - Verification against the Website Architecture Contract and no-AI-duplication checks.
   - Closed-loop definition, locked boundaries, prohibitions, and amendment/ratification process.
 
