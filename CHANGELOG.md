@@ -19,4 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Folder structure, system layers, and module boundaries.
   - Data flow, API flow, responsibilities, security boundaries, and deployment strategy.
   - Boundaries with the Universal AI Content Operating System defined for every layer and module.
+- Added the binding Website Architecture Contract (`docs/architecture/09-website-architecture-contract.md`):
+  - Locked statement: the website is a business platform only; all intelligence belongs to the AI OS.
+  - Closed-loop definition, locked boundaries, prohibitions, and amendment/ratification process.
 

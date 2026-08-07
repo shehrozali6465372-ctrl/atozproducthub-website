@@ -118,7 +118,7 @@ The website is the face of the business: where readers land, where products are 
 
 ## Architecture
 
-The complete website architecture (business layer only) is maintained in [docs/architecture](docs/architecture/README.md). It covers system layers, module boundaries, data flow, API flow, responsibilities, security boundaries, and deployment strategy — with the Universal AI Content Operating System treated strictly as an external system accessed only through the AI OS Bridge.
+The complete website architecture (business layer only) is maintained in [docs/architecture](docs/architecture/README.md). It covers system layers, module boundaries, data flow, API flow, responsibilities, security boundaries, and deployment strategy — with the Universal AI Content Operating System treated strictly as an external system accessed only through the AI OS Bridge. The binding boundary rule is the [Website Architecture Contract](docs/architecture/09-website-architecture-contract.md), which must be ratified before any implementation begins.
 
 ---
 

@@ -4,6 +4,8 @@
 **Type:** Architecture and documentation only — no implementation
 **Owner:** Lead Software Architect
 
+> **Contract:** [09-website-architecture-contract.md](09-website-architecture-contract.md) is the binding boundary document. No implementation may begin until it is ratified.
+
 This document set defines the complete architecture of the AtozProductHub website. The website is **only the business layer** of the AtozProductHub platform. The **Universal AI Content Operating System (AI OS)** already exists as the AI Brain and remains a completely separate system, codebase, and repository. Nothing in this architecture duplicates, reimplements, or embeds AI OS functionality.
 
 ## 1. Purpose
@@ -107,6 +109,7 @@ Readers, crawlers, and the future mobile app reach the website through the CDN e
 | [06-responsibilities.md](06-responsibilities.md) | Website, Pinterest, affiliate, SEO, analytics, admin responsibilities |
 | [07-security-boundaries.md](07-security-boundaries.md) | Trust zones, threat model, secrets, compliance |
 | [08-deployment-strategy.md](08-deployment-strategy.md) | Environments, CI/CD, rollout, scaling, DR |
+| [09-website-architecture-contract.md](09-website-architecture-contract.md) | **Binding contract:** locked boundary, closed loop, prohibitions, amendment process |
 
 ## 8. Conventions used in this document set
 
