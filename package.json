@@ -1,8 +1,8 @@
 {
   "name": "atozproducthub-website",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
-  "description": "AtozProductHub website — business layer only (monorepo root: dev tooling only).",
+  "description": "AtozProductHub website \u2014 business layer only (monorepo root: dev tooling only).",
   "workspaces": [
     "apps/*",
     "libs/design-system"

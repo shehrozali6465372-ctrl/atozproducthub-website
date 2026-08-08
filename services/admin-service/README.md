@@ -1,3 +1,11 @@
 # admin-service
 
-Admin & Governance module — commands/audit/settings (planned). Owner: @atoz/governance.
+Governance commands, audit log, and business settings — skeleton only.
+
+- **Owner:** @atoz/governance
+- **Status:** M3 skeleton — infrastructure only, no business logic.
+- **Endpoints:** `/health`, `/ready`, `/metrics` (shared backend-core factory).
+- **DB migrations:** `db/migrations/` (populated in Phase 4).
+- **AI OS boundary:** this service never contacts the AI OS directly; all AI OS
+  communication flows through `services/aios-bridge/` and
+  `libs/contracts/aios/`.

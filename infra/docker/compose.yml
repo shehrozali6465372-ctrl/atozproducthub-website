@@ -23,6 +23,30 @@ services:
       retries: 5
       start_period: 5s
 
+  aios-bridge:
+    build:
+      context: ../..
+      dockerfile: services/aios-bridge/Dockerfile
+    ports:
+      - "8100:8000"
+    environment:
+      APP_ENV: dev
+      APP_LOG_LEVEL: INFO
+      # Placeholder until the AI OS endpoint is provisioned (never a secret here).
+      AIOS_BASE_URL: http://aios:8100
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
   postgres:
     image: postgres:16-alpine
     environment:

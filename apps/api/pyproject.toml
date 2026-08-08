@@ -4,14 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "atoz-api"
-version = "0.1.0"
-description = "AtozProductHub business API gateway — M1 foundation"
+version = "0.3.0"
+description = "AtozProductHub business API gateway — M3 backend foundation"
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi>=0.115,<1",
+    "atoz-backend-core==0.3.0",
     "uvicorn[standard]>=0.30,<1",
-    "pydantic>=2.7,<3",
-    "pydantic-settings>=2.3,<3",
+    "PyJWT>=2.9,<3",
 ]
 
 [project.optional-dependencies]

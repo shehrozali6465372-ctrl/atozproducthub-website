@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atozproducthub.dev/contracts/aios/heartbeat.v1.json",
+  "title": "AIOS.Heartbeat",
+  "description": "Liveness/connectivity between the Bridge and the AI OS (every 60s when idle).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status"],
+  "properties": {
+    "status": { "type": "string", "enum": ["ok"] },
+    "latency_ms": { "type": "number", "minimum": 0 }
+  }
+}

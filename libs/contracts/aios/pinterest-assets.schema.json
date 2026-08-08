@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atozproducthub.dev/contracts/aios/pinterest-assets.v1.json",
+  "title": "AIOS.Pinterest.Assets",
+  "description": "AI OS delivers generated pin images and copy variants for scheduled pins.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["job_id", "pin_draft_id", "assets", "status"],
+  "properties": {
+    "job_id": { "type": "string", "format": "uuid", "description": "Correlation" },
+    "pin_draft_id": { "type": "string", "format": "uuid", "description": "Correlation" },
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["image_ref", "copy", "title", "board_suggestion"],
+        "properties": {
+          "image_ref": { "type": "string" },
+          "copy": { "type": "string" },
+          "title": { "type": "string" },
+          "board_suggestion": { "type": "string" }
+        }
+      }
+    },
+    "status": { "type": "string", "enum": ["ready", "partial", "failed"] }
+  }
+}

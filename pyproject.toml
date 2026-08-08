@@ -1,20 +1,59 @@
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["apps/api/src"]
+src = [
+    "apps/api/src",
+    "libs/backend-core/src",
+    "services/aios-bridge/src",
+    "services/content-service/src",
+    "services/affiliate-service/src",
+    "services/pinterest-service/src",
+    "services/seo-service/src",
+    "services/analytics-service/src",
+    "services/admin-service/src",
+    "services/automation-service/src",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "UP", "B", "I"]
-ignore = ["B008"]
+# B008: FastAPI Depends-in-defaults is the idiomatic FastAPI pattern.
+# UP046: PEP 695 type params would drop Python 3.11 support; kept for 3.11 compatibility.
+ignore = ["B008", "UP046"]
 
 [tool.ruff.format]
 quote-style = "double"
 
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
 [tool.pytest.ini_options]
-testpaths = ["apps/api/tests"]
-addopts = "-q"
+testpaths = [
+    "apps/api/tests",
+    "libs/backend-core/tests",
+    "services/aios-bridge/tests",
+    "services/content-service/tests",
+    "services/affiliate-service/tests",
+    "services/pinterest-service/tests",
+    "services/seo-service/tests",
+    "services/analytics-service/tests",
+    "services/admin-service/tests",
+    "services/automation-service/tests",
+]
+addopts = "-q --import-mode=importlib"
 
 [tool.mypy]
 python_version = "3.12"
-files = ["apps/api/src/atoz_api"]
+files = [
+    "apps/api/src/atoz_api",
+    "libs/backend-core/src/atoz_backend_core",
+    "services/aios-bridge/src/atoz_aios_bridge",
+    "services/content-service/src/atoz_content_service",
+    "services/affiliate-service/src/atoz_affiliate_service",
+    "services/pinterest-service/src/atoz_pinterest_service",
+    "services/seo-service/src/atoz_seo_service",
+    "services/analytics-service/src/atoz_analytics_service",
+    "services/admin-service/src/atoz_admin_service",
+    "services/automation-service/src/atoz_automation_service",
+]
 warn_unused_configs = true
+ignore_missing_imports = true

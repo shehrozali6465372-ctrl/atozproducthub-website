@@ -1,13 +1,21 @@
 PYTHON ?= .venv/bin/python
 PIP ?= .venv/bin/pip
 COMPOSE ?= docker compose -f infra/docker/compose.yml
+SERVICES ?= services/*/
 
-.PHONY: setup test lint format format-check typecheck no-ai check docker-up docker-down health clean
+.PHONY: setup test lint format format-check typecheck no-ai check docker-up docker-down health clean services-install
 
 setup:
 	python3 -m venv .venv
 	$(PIP) install --upgrade pip
+	$(PIP) install -e "libs/backend-core[dev]"
 	$(PIP) install -e "apps/api[dev]"
+	$(MAKE) services-install
+
+services-install:
+	for s in $(SERVICES); do \
+		$(PIP) install -e "$$s[dev]"; \
+	done
 
 test:
 	$(PYTHON) -m pytest

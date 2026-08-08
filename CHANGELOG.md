@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-08
+
+### Added
+
+- Implemented M3 backend business foundation (first backend code beyond M1):
+  - ADR-0002: accepted `services/automation-service/` as the eighth service skeleton (business automation workflows, not AI OS automation).
+  - ADR-0003: accepted `libs/backend-core` (`atoz-backend-core`) as the shared backend foundation consumed by the gateway and every service.
+  - `libs/backend-core`: shared infrastructure primitives — pydantic-settings base config, JSON structured logging with request-ID correlation, middleware (request ID, security headers, rate limiting with 429 + `Retry-After`), async PostgreSQL/Redis engines + health checks, ORM `Base`, repository pattern + unit of work, domain event system (`type.v1` envelope, in-memory bus, publisher), Celery worker scaffolding, auth primitives (JWT access/refresh, RBAC, sessions, Argon2 password hashing, MFA provisioning placeholders), secrets loading (env + Vault KV v2 hooks), Prometheus metrics, OpenTelemetry hooks (no-op unless enabled), and `create_service_app` FastAPI factory (`/health`, `/ready`, `/metrics`). Per-service Alembic migration template under `libs/backend-core/migrations/`.
+  - `libs/contracts/aios/`: frozen v1 JSON Schemas for all seven AI OS contracts (`AIOS.Content.Intake`, `AIOS.Job.Request`, `AIOS.Job.Status`, `AIOS.SEO.Metadata`, `AIOS.Pinterest.Assets`, `AIOS.Analytics.Insights`, `AIOS.Heartbeat`) — validated by the Bridge and CI.
+  - `services/aios-bridge/`: the only AI OS contact point — transport-only client with schema-first contract validation, HMAC-SHA256 request signing, exponential-backoff retries (1s × 2, cap 60s, max 5), timeout, heartbeat, and a circuit-breaker stub. No prompts, models, generation, learning, or memory.
+  - Seven service skeletons (`content`, `affiliate`, `pinterest`, `seo`, `analytics`, `admin`, `automation`): per-service package, shared-app factory wiring, health/readiness/metrics endpoints, tests, per-service `db/migrations/`, Dockerfiles, READMEs. No business logic.
+  - Gateway (`apps/api`) upgraded to v0.3.0: consumes the shared factory, adds `/ready` and `/metrics`, `AuthMiddleware` (Bearer decode + session resolution → `request.state.auth`), and the versioned API v1 router (`/api/v1/auth/token`, `/auth/refresh`, `/auth/revoke`, `/auth/me`) with a dev credential placeholder disabled in production (OIDC replaces it in Phase 5).
+  - Tooling: `Makefile setup` installs backend-core, gateway, and all services; root pytest/mypy/ruff config covers the new trees; CI quality/test jobs install every package; Docker job builds all service images; compose adds `aios-bridge` with a health check; `config/{dev,staging,prod}/env.template` added.
+  - 99 tests passing across gateway (25), backend-core (33), aios-bridge (20), and the seven service skeletons (21) — plus lint, type check, no-AI guard, and contract validation.
+
+### Removed
+
+- Duplicated M1 logging/middleware implementations in the gateway are now thin re-exports of the shared backend-core implementation (ADR-0003).
+
+### Security
+
+- Dev-only JWT secret and dev-admin credential placeholder are local/test-only and explicitly disabled when `APP_ENV=prod`; production secrets come from Vault.
+
 ## [0.2.0] - 2026-08-07
 
 ### Added

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atozproducthub.dev/contracts/aios/job-status.v1.json",
+  "title": "AIOS.Job.Status",
+  "description": "AI OS reports job lifecycle (webhook, at-least-once).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["job_id", "request_id", "state"],
+  "properties": {
+    "job_id": { "type": "string", "format": "uuid", "description": "Correlation" },
+    "request_id": { "type": "string", "format": "uuid", "description": "Original request" },
+    "state": {
+      "type": "string",
+      "enum": ["queued", "running", "succeeded", "failed", "canceled"]
+    },
+    "progress": { "type": "number", "minimum": 0, "maximum": 1 },
+    "result_ref": { "type": "string", "description": "Approved output reference" },
+    "error_code": { "type": "string", "description": "Machine-readable failure reason" }
+  }
+}

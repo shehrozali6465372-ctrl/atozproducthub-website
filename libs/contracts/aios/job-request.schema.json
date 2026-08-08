@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atozproducthub.dev/contracts/aios/job-request.v1.json",
+  "title": "AIOS.Job.Request",
+  "description": "Website requests generation work from the AI OS. The website never generates anything itself.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["request_id", "job_type", "niche_id", "context", "callback"],
+  "properties": {
+    "request_id": { "type": "string", "format": "uuid", "description": "Idempotency key" },
+    "job_type": {
+      "type": "string",
+      "enum": ["content", "seo_metadata", "pinterest_assets", "analytics_insights"]
+    },
+    "niche_id": { "type": "string", "format": "uuid", "description": "Scoping" },
+    "context": {
+      "type": "object",
+      "description": "e.g. pin_id, article_id/url, period for insights",
+      "additionalProperties": true
+    },
+    "preferences": {
+      "type": "object",
+      "description": "Niche/brand/format hints",
+      "additionalProperties": true
+    },
+    "callback": {
+      "type": "object",
+      "description": "Webhook target + event contract for results",
+      "required": ["url", "event_contract"],
+      "additionalProperties": false,
+      "properties": {
+        "url": { "type": "string", "format": "uri" },
+        "event_contract": { "type": "string", "enum": ["aios.job.status.v1"] }
+      }
+    }
+  }
+}

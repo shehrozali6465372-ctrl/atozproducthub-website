@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "atoz-backend-core"
+version = "0.3.0"
+description = "Shared backend foundation for AtozProductHub business services (ADR-0003). Infrastructure primitives only - no business logic."
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115,<1",
+    "pydantic>=2.7,<3",
+    "pydantic-settings>=2.3,<3",
+    "sqlalchemy[asyncio]>=2.0,<3",
+    "asyncpg>=0.29,<1",
+    "redis>=5,<7",
+    "alembic>=1.13,<2",
+    "PyJWT>=2.9,<3",
+    "pwdlib[argon2]>=0.2,<1",
+    "celery[redis]>=5.4,<6",
+    "prometheus-client>=0.20,<1",
+    "jsonschema>=4.22,<5",
+    "httpx>=0.27,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.3,<10",
+    "aiosqlite>=0.20,<1",
+    "ruff>=0.6,<1",
+    "mypy>=1.10,<2",
+    "pip-audit>=2.7,<3",
+]
+otel = [
+    "opentelemetry-sdk>=1.27,<2",
+    "opentelemetry-instrumentation-fastapi>=0.48b0,<1",
+    "opentelemetry-exporter-otlp-proto-http>=1.27,<2",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

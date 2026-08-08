@@ -1,3 +1,3 @@
-"""AtozProductHub business API gateway foundation (M1)."""
+"""AtozProductHub business API gateway foundation (M3)."""
 
-__version__ = "0.1.0"
+__version__ = "0.3.0"

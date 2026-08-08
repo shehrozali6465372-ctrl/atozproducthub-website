@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atozproducthub.dev/contracts/aios/seo-metadata.v1.json",
+  "title": "AIOS.SEO.Metadata",
+  "description": "AI OS delivers SEO metadata intelligence for URLs; the website applies it as business data.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["job_id", "url_registry_id", "title", "meta_description"],
+  "properties": {
+    "job_id": { "type": "string", "format": "uuid", "description": "Correlation" },
+    "url_registry_id": { "type": "string", "format": "uuid", "description": "Target URL" },
+    "title": { "type": "string" },
+    "meta_description": { "type": "string" },
+    "canonical_suggestion": { "type": "string", "description": "URL policy input (website validates)" },
+    "keywords": { "type": "array", "items": { "type": "string" } },
+    "structured_data_hints": {
+      "type": "object",
+      "description": "JSON-LD hints (website validates schema)",
+      "additionalProperties": true
+    },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1, "description": "Display/decision hint only" }
+  }
+}

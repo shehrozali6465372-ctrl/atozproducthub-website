@@ -1,39 +1,61 @@
-"""Request context middleware: request IDs and access logging."""
+"""Gateway middleware: Bearer authentication + request ID.
 
-import logging
-import time
-import uuid
+``RequestContextMiddleware`` re-exports the shared request-ID middleware
+(backend-core, ADR-0003). ``AuthMiddleware`` decodes Bearer access tokens
+and resolves the session, attaching ``request.state.auth`` for RBAC.
+"""
 
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
+from atoz_api.auth import AuthenticatedContext
+from atoz_api.config import get_settings
+from atoz_backend_core.middleware.request_id import RequestIdMiddleware
 
-from atoz_api.logging import request_id_var
-
-logger = logging.getLogger("atoz.http")
+RequestContextMiddleware = RequestIdMiddleware
 
 
-class RequestContextMiddleware(BaseHTTPMiddleware):
-    """Attach a request ID, expose it on the response, and log every request."""
+class AuthMiddleware:
+    """Decode Bearer access tokens and attach the auth context (no hard failure).
 
-    async def dispatch(self, request: Request, call_next):
-        request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex
-        token = request_id_var.set(request_id)
-        started = time.perf_counter()
-        response = None
+    Unauthenticated requests pass through untouched; protected routes enforce
+    via the RBAC dependency. Token/session errors simply mean "no context".
+    """
+
+    def __init__(self, app, settings=None, session_manager=None) -> None:
+        self._app = app
+        self._settings = settings or get_settings()
+        self._session_manager = session_manager
+
+    async def __call__(self, scope, receive, send) -> None:
+        if scope["type"] != "http":
+            await self._app(scope, receive, send)
+            return
+
+        headers = dict(
+            (k.decode("latin-1"), v.decode("latin-1")) for k, v in scope.get("headers", [])
+        )
+        authorization = headers.get("authorization", "")
+        if authorization.startswith("Bearer "):
+            token = authorization[len("Bearer ") :]
+            context = await self._resolve(token)
+            if context is not None:
+                scope.setdefault("state", {})["auth"] = context
+        await self._app(scope, receive, send)
+
+    async def _resolve(self, token: str) -> AuthenticatedContext | None:
+        from jwt import PyJWTError
+
+        from atoz_backend_core.auth import decode_token
+
         try:
-            response = await call_next(request)
-        finally:
-            elapsed_ms = (time.perf_counter() - started) * 1000
-            logger.info(
-                "request_completed",
-                extra={
-                    "method": request.method,
-                    "path": request.url.path,
-                    "status": response.status_code if response is not None else 500,
-                    "duration_ms": round(elapsed_ms, 2),
-                },
-            )
-            request_id_var.reset(token)
-        if response is not None:
-            response.headers["X-Request-ID"] = request_id
-        return response
+            claims = decode_token(token, secret=self._settings.jwt_secret, expected_type="access")
+        except PyJWTError:
+            return None
+        if self._session_manager is None:
+            return None
+        session = await self._session_manager.get(claims.session_id)
+        if session is None:
+            return None
+        return AuthenticatedContext(
+            subject=session.subject,
+            permissions=session.permissions,
+            session_id=session.session_id,
+        )

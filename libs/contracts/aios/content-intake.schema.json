@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atozproducthub.dev/contracts/aios/content-intake.v1.json",
+  "title": "AIOS.Content.Intake",
+  "description": "AI OS delivers approved content packages for the website to store and publish.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "content_package_id", "niche_id", "content_type", "title",
+    "slug_suggestion", "body_ref", "seo", "checksum"
+  ],
+  "properties": {
+    "content_package_id": { "type": "string", "format": "uuid", "description": "Idempotency + dedupe key" },
+    "niche_id": { "type": "string", "format": "uuid", "description": "Must be active" },
+    "content_type": { "type": "string", "enum": ["article", "product_description"] },
+    "job_id": { "type": "string", "format": "uuid", "description": "Originating job" },
+    "title": { "type": "string" },
+    "slug_suggestion": { "type": "string" },
+    "body_ref": { "type": "string", "description": "Object-storage reference (never inline body)" },
+    "media_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Approved image refs"
+    },
+    "seo": {
+      "type": "object",
+      "description": "Already produced by AI OS",
+      "required": ["title", "meta_description"],
+      "additionalProperties": true,
+      "properties": {
+        "title": { "type": "string" },
+        "meta_description": { "type": "string" },
+        "keywords": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "publish_preferences": {
+      "type": "object",
+      "description": "Schedule, niche placement",
+      "additionalProperties": true
+    },
+    "checksum": { "type": "string", "description": "Content hash for dedupe" }
+  }
+}

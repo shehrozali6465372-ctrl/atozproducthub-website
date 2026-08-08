@@ -126,14 +126,19 @@ The complete website architecture (business layer only) is maintained in [docs/a
 
 Prerequisites: Python 3.11+, Node.js 20+, Docker, Docker Compose.
 
-Backend / API gateway (M1):
+Backend (M3 — shared core, API gateway, and eight service skeletons):
 
 ```bash
-make setup        # create .venv and install foundation dependencies
-make check        # lint, format check, typecheck, no-AI guard, tests
-make docker-up    # build and start api, postgres, redis (compose)
-make health       # GET /health
+make setup        # create .venv; install backend-core, gateway, and services
+make check        # lint, format check, typecheck, no-AI guard, contract check, tests
+make docker-up    # build and start api, aios-bridge, postgres, redis (compose)
+make health       # GET /health on the gateway
 ```
+
+The shared backend foundation lives in `libs/backend-core` (ADR-0003) and is
+consumed by the gateway (`apps/api`) and every service under `services/`.
+The AI OS Bridge (`services/aios-bridge`) is the only AI OS contact point;
+the frozen v1 message schemas live in `libs/contracts/aios/`.
 
 Frontend (M2 — web + admin wireframes on the shared design system):
 
@@ -147,7 +152,7 @@ npm test          # vitest + axe a11y tests (all workspaces)
 npm run build     # next build (web + admin)
 ```
 
-The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation) and M2 (frontend foundation) are complete, M3 (backend + database) is next.
+The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), and M3 (backend foundation) are complete; M4 (CMS business layer) is next.
 
 ---
 
