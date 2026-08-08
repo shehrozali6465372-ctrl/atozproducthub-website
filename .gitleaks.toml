@@ -1,0 +1,14 @@
+title = "AtozProductHub gitleaks configuration"
+
+# Test-only credential fixtures are intentionally not secrets: they are
+# throwaway values used to exercise auth/transport code in CI and local
+# development. Real credentials only ever enter through environment
+# variables / Vault and are never committed.
+[[allowlist]]
+description = "Test fixtures and root test conftest (throwaway credentials)"
+paths = [
+    "^conftest\\.py$",
+    "apps/api/tests/.*",
+    "libs/backend-core/tests/.*",
+    "services/.*/tests/.*",
+]
