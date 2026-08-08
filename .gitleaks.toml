@@ -4,7 +4,7 @@ title = "AtozProductHub gitleaks configuration"
 # throwaway values used to exercise auth/transport code in CI and local
 # development. Real credentials only ever enter through environment
 # variables / Vault and are never committed.
-[[allowlist]]
+[allowlist]
 description = "Test fixtures and root test conftest (throwaway credentials)"
 paths = [
     "^conftest\\.py$",
