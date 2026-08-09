@@ -53,6 +53,54 @@ jobs:
       - name: Run tests
         run: pytest
 
+  database:
+    name: Database (migrations on fresh PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: atoz
+          POSTGRES_USER: atoz
+          POSTGRES_PASSWORD: atoz
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U atoz"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "libs/backend-core[dev]"
+          pip install -e "services/content-service[dev]"
+      - name: Verify single migration head
+        working-directory: services/content-service
+        run: python -m alembic -c db/migrations/alembic.ini heads | grep -c "(head)" | grep -q 1
+      - name: Migrate fresh PostgreSQL (upgrade head)
+        working-directory: services/content-service
+        env:
+          DATABASE_URL: postgresql+asyncpg://atoz:atoz@localhost:5432/atoz
+        run: python -m alembic -c db/migrations/alembic.ini upgrade head
+      - name: Verify schema on PostgreSQL
+        env:
+          PGPASSWORD: atoz
+        run: |
+          psql -h localhost -U atoz -d atoz -c "\dt" | grep -E "niches|articles|article_versions|categories|article_categories|tags|article_tags"
+      - name: Downgrade + re-upgrade (repeatable migrations)
+        working-directory: services/content-service
+        env:
+          DATABASE_URL: postgresql+asyncpg://atoz:atoz@localhost:5432/atoz
+        run: |
+          python -m alembic -c db/migrations/alembic.ini downgrade base
+          python -m alembic -c db/migrations/alembic.ini upgrade head
+
   frontend:
     name: Frontend (lint, types, build, tests)
     runs-on: ubuntu-latest
@@ -109,6 +157,17 @@ jobs:
             sleep 2
           done
           echo "aios-bridge health check failed" >&2
+          exit 1
+      - name: Health check (content-service)
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8200/health; then
+              echo "content-service health OK"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "content-service health check failed" >&2
           exit 1
       - name: Compose down
         if: always()

@@ -7,6 +7,7 @@ import type { AdminNavItem } from "@atoz/design-system";
 import {
   BarChart3,
   DollarSign,
+  FileText,
   LayoutDashboard,
   Pin,
   Settings,
@@ -15,6 +16,7 @@ import {
 
 export const NAV_ITEMS: AdminNavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard, section: "Operations" },
+  { label: "Content", href: "/content", icon: FileText, section: "Operations" },
   { label: "Analytics", href: "/analytics", icon: BarChart3, section: "Operations" },
   { label: "Revenue", href: "/revenue", icon: DollarSign, section: "Operations" },
   { label: "Pinterest", href: "/pinterest", icon: Pin, section: "Channels" },
@@ -24,6 +26,8 @@ export const NAV_ITEMS: AdminNavItem[] = [
 
 export const PAGE_TITLES: Record<string, string> = {
   "/": "Dashboard",
+  "/content": "Content",
+  "/content/new": "New Article",
   "/analytics": "Analytics",
   "/revenue": "Revenue",
   "/pinterest": "Pinterest",
@@ -116,3 +120,157 @@ export const PIN_ACCOUNTS = [
   { id: "acct2", name: "workspacesetup", niche: "Office", boards: 12, pins: 860, rateLimit: "OK" },
   { id: "acct3", name: "travelpicks", niche: "Travel", boards: 14, pins: 1015, rateLimit: "Near limit" },
 ];
+
+// ------------------------------------------------------------ CMS fixtures
+// M4 admin CMS read models. Real records arrive from content-service through
+// the API gateway; these keep the dashboard usable standalone (mock default).
+
+export interface MockAdminArticle {
+  id: string;
+  nicheId: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  status: string;
+  authorRef: string | null;
+  editorRef: string | null;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  primaryCategoryId: string | null;
+  categoryIds: string[];
+  tagIds: string[];
+  versions: {
+    id: string;
+    versionNo: number;
+    title: string;
+    excerpt: string;
+    changeSummary: string | null;
+    createdBy: string | null;
+    createdAt: string;
+  }[];
+}
+
+export interface MockAdminNiche {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  defaultCurrency: string | null;
+}
+
+export interface MockAdminCategory {
+  id: string;
+  nicheId: string;
+  name: string;
+  slug: string;
+  description: string;
+  status: string;
+}
+
+export interface MockAdminTag {
+  id: string;
+  nicheId: string;
+  name: string;
+  slug: string;
+  status: string;
+}
+
+const MOCK_NICHE_ID = "11111111-1111-4111-8111-111111111111";
+
+export const MOCK_ADMIN_NICHES: MockAdminNiche[] = [
+  { id: MOCK_NICHE_ID, name: "Kitchen", slug: "kitchen", status: "active", defaultCurrency: "USD" },
+];
+
+export const MOCK_ADMIN_CATEGORIES: MockAdminCategory[] = [
+  { id: "22222222-2222-4222-8222-222222222222", nicheId: MOCK_NICHE_ID, name: "Kitchen", slug: "kitchen", description: "Cookware, gadgets, and food-prep gear.", status: "active" },
+  { id: "33333333-3333-4333-8333-333333333333", nicheId: MOCK_NICHE_ID, name: "Office", slug: "office", description: "Desks, chairs, lighting, and organization.", status: "active" },
+];
+
+export const MOCK_ADMIN_TAGS: MockAdminTag[] = [
+  { id: "44444444-4444-4444-8444-444444444444", nicheId: MOCK_NICHE_ID, name: "Buying Guide", slug: "buying-guide", status: "active" },
+  { id: "55555555-5555-4555-8555-555555555555", nicheId: MOCK_NICHE_ID, name: "Kitchen", slug: "kitchen", status: "active" },
+];
+
+export const MOCK_ADMIN_ARTICLES: MockAdminArticle[] = [
+  {
+    id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    nicheId: MOCK_NICHE_ID,
+    slug: "sample-article",
+    title: "The Kitchen Gadgets Guide: What's Actually Worth Buying",
+    excerpt: "A practical, honest look at the kitchen tools that earn their counter space.",
+    status: "published",
+    authorRef: "author@atozproducthub.com",
+    editorRef: "editor@atozproducthub.com",
+    publishedAt: "2026-08-02T09:00:00Z",
+    createdAt: "2026-07-20T10:00:00Z",
+    updatedAt: "2026-08-02T09:00:00Z",
+    primaryCategoryId: "22222222-2222-4222-8222-222222222222",
+    categoryIds: ["22222222-2222-4222-8222-222222222222"],
+    tagIds: ["55555555-5555-4555-8555-555555555555", "44444444-4444-4444-8444-444444444444"],
+    versions: [
+      {
+        id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        versionNo: 2,
+        title: "The Kitchen Gadgets Guide: What's Actually Worth Buying",
+        excerpt: "A practical, honest look at the kitchen tools that earn their counter space.",
+        changeSummary: "Added 2026 price updates.",
+        createdBy: "editor@atozproducthub.com",
+        createdAt: "2026-08-02T09:00:00Z",
+      },
+      {
+        id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        versionNo: 1,
+        title: "The Kitchen Gadgets Guide",
+        excerpt: "A practical look at kitchen tools.",
+        changeSummary: "Initial draft.",
+        createdBy: "author@atozproducthub.com",
+        createdAt: "2026-07-20T10:00:00Z",
+      },
+    ],
+  },
+  {
+    id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+    nicheId: MOCK_NICHE_ID,
+    slug: "home-office-essentials",
+    title: "Home Office Essentials: Setup That Survives the 9-to-5",
+    excerpt: "Chairs, lighting, and desk organization upgrades.",
+    status: "draft",
+    authorRef: "author@atozproducthub.com",
+    editorRef: null,
+    publishedAt: null,
+    createdAt: "2026-07-26T10:00:00Z",
+    updatedAt: "2026-07-26T10:00:00Z",
+    primaryCategoryId: "33333333-3333-4333-8333-333333333333",
+    categoryIds: ["33333333-3333-4333-8333-333333333333"],
+    tagIds: ["44444444-4444-4444-8444-444444444444"],
+    versions: [],
+  },
+  {
+    id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+    nicheId: MOCK_NICHE_ID,
+    slug: "travel-pack-light",
+    title: "Pack Light, Pack Right: Travel Gear for Carry-On-Only Trips",
+    excerpt: "Packing systems that turn one-bag trips from stressful to effortless.",
+    status: "review",
+    authorRef: "author@atozproducthub.com",
+    editorRef: null,
+    publishedAt: null,
+    createdAt: "2026-07-12T10:00:00Z",
+    updatedAt: "2026-07-28T10:00:00Z",
+    primaryCategoryId: null,
+    categoryIds: [],
+    tagIds: [],
+    versions: [],
+  },
+];
+
+export function mockArticleBody(article: MockAdminArticle): string {
+  if (article.id === "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa") {
+    return [
+      "Every year, thousands of new kitchen gadgets promise to change the way you cook. Most of them end up in a drawer.",
+      "Start with the essentials: a quality chef's knife, a properly seasoned pan, and a thermometer you trust.",
+    ].join("\n\n");
+  }
+  return "Draft content will be written here by the AI Content OS and reviewed by editors.\n\nSecond paragraph placeholder.";
+}

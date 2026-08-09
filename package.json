@@ -1,6 +1,6 @@
 {
   "name": "atozproducthub-website",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "AtozProductHub website \u2014 business layer only (monorepo root: dev tooling only).",
   "workspaces": [

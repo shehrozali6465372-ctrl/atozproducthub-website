@@ -47,6 +47,37 @@ services:
       retries: 5
       start_period: 5s
 
+  content-service:
+    build:
+      context: ../..
+      dockerfile: services/content-service/Dockerfile
+    ports:
+      - "8200:8000"
+    environment:
+      APP_ENV: dev
+      APP_LOG_LEVEL: INFO
+      # Business data lives in the shared Postgres; content bodies stay in
+      # the mounted object-store directory (Database Blueprint §2.1).
+      DATABASE_URL: postgresql+asyncpg://atoz:atoz@postgres:5432/atoz
+      CONTENT_STORAGE_DIR: /data/content
+    volumes:
+      - content_data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -75,3 +106,4 @@ services:
 
 volumes:
   postgres_data:
+  content_data:

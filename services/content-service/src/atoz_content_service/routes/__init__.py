@@ -1,10 +1,6 @@
-"""Route registration for content-service.
+"""Content API routes: public reads + admin content management."""
 
-M3 ships an empty router: business endpoints arrive with their module
-(Phase 4+). Only infrastructure routes (/health, /ready, /metrics) are
-active today via the shared app factory.
-"""
+from atoz_content_service.routes.admin import router as admin_router
+from atoz_content_service.routes.public import router as public_router
 
-from fastapi import APIRouter
-
-router = APIRouter(tags=["content-service"])
+__all__ = ["admin_router", "public_router"]

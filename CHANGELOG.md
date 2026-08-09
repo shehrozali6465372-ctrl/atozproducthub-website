@@ -6,6 +6,63 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-09
+
+### Added
+
+- Implemented M4 CMS business layer (first business milestone) — ADR-0004
+  freezes content-service ownership of `content_db`, the lifecycle status
+  superset (draft → review → published → archived + unpublished + re-publish),
+  the immutable published-snapshot rule, `X-Niche-Id` tenancy transport, and
+  deferred partitioning.
+- `services/content-service` v0.4.0:
+  - Domain layer: statuses (`ArticleStatus`, taxonomy statuses), server-side
+    lifecycle state machine (`domain/lifecycle.py`), slugify + per-niche
+    `unique_slug`, RFC7807 error hierarchy, UUIDv7 keys, SQLAlchemy entities
+    for niches/articles/article_versions/categories/article_categories/tags/
+    article_tags — every content table scoped by `niche_id`.
+  - Repository layer: niche-scoped repositories (every query/mutation carries
+    `niche_id`), slug uniqueness, soft delete, link-table replace helpers, and
+    a typed `ContentUnitOfWork`.
+  - Service layer: `ContentService` facade with CRUD, lifecycle validation,
+    immutable versioning, published-snapshot protection (edits while
+    published keep the live snapshot until re-publish), author/editor
+    metadata, taxonomy validation, and domain events (`content:published.v1`,
+    `content:updated.v1`, `content:unpublished.v1`) emitted after commit.
+  - Content storage abstraction (`ContentStore`, local + in-memory) with
+    SHA-256 checksums; bodies live outside the database (DB Blueprint §2.1).
+  - Alembic migration `0001` (portable SQLite/PostgreSQL) with all blueprint
+    indexes/unique constraints; CI validates it on a fresh PostgreSQL 16.
+  - API: public read API (`/api/v1/public/{niches,articles,categories,tags}`,
+    published-only, niche-by-slug) and admin API (`/api/v1/admin/*` with
+    JWT RBAC `content:read`/`content:write` + mandatory `X-Niche-Id`),
+    17 OpenAPI paths.
+- Admin CMS screens in `apps/admin`: content list with status filter,
+  new-article form, article editor with lifecycle actions and version
+  history — built on the shared design system, wired to the content-service
+  admin API via the typed client when `NEXT_PUBLIC_CONTENT_API_BASE_URL` is
+  set, mock-fixture fallback otherwise (default CI build mode).
+- Public site (`apps/web`): the content namespace of the typed API client now
+  reads the real public API when `NEXT_PUBLIC_CONTENT_API_BASE_URL` is set
+  (mapped to existing page shapes); article/category/tag pages unchanged and
+  still fully mock-backed in the default build.
+- Infrastructure: `content-service` added to `infra/docker/compose.yml`
+  (Postgres-backed, healthchecked); CI gains a `database` job (fresh
+  PostgreSQL, single-head check, upgrade/downgrade/re-upgrade, schema smoke)
+  and a compose health check for content-service.
+- Tests: 58 new tests (unit, repository, service/domain, public/admin API,
+  lifecycle, authorization, slug uniqueness, versioning, published-snapshot
+  immutability, cross-niche isolation, migration/clean-database) — 154 total
+  across the repo; 9 new frontend tests (web live-client mapping + admin CMS
+  screens with axe WCAG checks) — 22 total. No-AI guard, contract validation,
+  ruff, mypy, pip-audit, typecheck, lint, and production builds all green.
+
+### Security
+
+- Admin content routes require a valid gateway-issued JWT with
+  `content:read`/`content:write` claims plus a valid `X-Niche-Id`; the dev
+  JWT secret is local/test-only (production via Vault).
+
 ## [0.3.0] - 2026-08-08
 
 ### Added
@@ -98,4 +155,3 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Module details per phase: files, folders, dependencies, database tables, API contracts, future integrations, testing.
   - Dependency-ordered implementation sequence, milestone roadmap M1–M8 with Definition of Done for each.
   - Closed-loop definition, locked boundaries, prohibitions, and amendment/ratification process.
-

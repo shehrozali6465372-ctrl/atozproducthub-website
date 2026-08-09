@@ -140,6 +140,24 @@ consumed by the gateway (`apps/api`) and every service under `services/`.
 The AI OS Bridge (`services/aios-bridge`) is the only AI OS contact point;
 the frozen v1 message schemas live in `libs/contracts/aios/`.
 
+CMS (M4 — `services/content-service`): the content module owns the content
+database (`content_db`) with its own Alembic migration stream:
+
+```bash
+cd services/content-service
+DATABASE_URL="postgresql+asyncpg://atoz:atoz@localhost:5432/atoz" \
+  python -m alembic -c db/migrations/alembic.ini upgrade head
+```
+
+Run the content-service (public read API + admin CMS API) with the gateway
+issuing JWT access tokens and the `X-Niche-Id` header carrying the tenancy
+context (ADR-0004). In development the frontends use mock fixtures unless the
+content API is configured:
+
+- `NEXT_PUBLIC_CONTENT_API_BASE_URL` — public/admin API base (web + admin).
+- `NEXT_PUBLIC_NICHE_SLUG` — niche slug for the public site (default `kitchen`).
+- `NEXT_PUBLIC_NICHE_ID` / `NEXT_PUBLIC_ADMIN_TOKEN` — dev admin tenancy + JWT.
+
 Frontend (M2 — web + admin wireframes on the shared design system):
 
 ```bash
@@ -152,7 +170,7 @@ npm test          # vitest + axe a11y tests (all workspaces)
 npm run build     # next build (web + admin)
 ```
 
-The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), and M3 (backend foundation) are complete; M4 (CMS business layer) is next.
+The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), M3 (backend foundation), and M4 (CMS business layer) are complete; M5 (authentication hardening + CMS follow-ups) is next.
 
 ---
 
