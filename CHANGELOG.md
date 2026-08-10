@@ -6,6 +6,95 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-10
+
+### Added
+
+- Implemented M5 Affiliate Engine (monetization milestone) — ADR-0005 freezes
+  affiliate-service ownership of `affiliate_db`, the local niche tenancy
+  mirror (cross-database FKs to `content_db.niches` are impossible), the
+  server-controlled signed redirect rule, append-only click/conversion
+  ledgers, webhook signature verification + idempotent conversion ingestion,
+  and disclosure enforcement in the business layer.
+- `services/affiliate-service` v0.5.0:
+  - Domain layer: `affiliate_niches` (local mirror), `affiliate_networks`
+    (global reference), `affiliate_merchants`, `affiliate_products`,
+    `product_categories` + `product_category_links`, `affiliate_links`,
+    `link_tokens`, `affiliate_clicks`, `click_attributions`,
+    `revenue_transactions`, `revenue_reconciliations`, `revenue_summaries`,
+    and `affiliate_webhook_logs` — every business record niche-scoped by
+    `niche_id`; UUIDv7 keys; HMAC-SHA256 token signing; commission lifecycle
+    state machine (pending → approved → paid, pending → rejected).
+  - Repository layer: niche-scoped repositories (every query/mutation
+    carries `niche_id`), append-only click/revenue ledgers (no update/delete
+    paths), `UNIQUE (network_id, network_transaction_id)` conversion
+    idempotency, webhook-log correlation by `(source, event_id)`, and a typed
+    `AffiliateUnitOfWork`.
+  - Service layer: `AffiliateService` facade with network/merchant/product/
+    category/link/token CRUD, product activation gated on disclosure-required
+    links, signed token minting/revocation, `resolve_redirect` (invalid,
+    revoked, expired tokens → indistinguishable 404; click recorded before
+    redirect), `process_conversion` webhook ingestion (HMAC verification,
+    schema validation, idempotent + transactional, domain events after
+    commit), `transition_commission`, revenue summaries/dashboard, and
+    reconciliation records. Domain events: `affiliate:click.v1`,
+    `revenue:attributed.v1`, `product:removed.v1`.
+  - Alembic migration `0001` (portable SQLite/PostgreSQL, `sa.false()/true()`
+    defaults per the M4 Postgres lesson) with all blueprint indexes, unique
+    constraints, and FKs; CI validates both content and affiliate migration
+    streams against the same fresh PostgreSQL 16.
+  - API: public read API (`/api/v1/public/{product-categories,products}` +
+    `/api/v1/public/go/{token}` redirect resolver), admin API
+    (`/api/v1/admin/{networks,merchants,product-categories,products,links,
+    tokens,clicks,revenue,revenue-summaries,reconciliations}` with JWT RBAC
+    `affiliate:read`/`affiliate:write` + mandatory `X-Niche-Id`), and the
+    webhook receiver `POST /webhooks/v1/{network_code}/conversion`
+    (202 fast-ack incl. duplicates; 400 problem+json on invalid
+    signature/payload).
+- Admin affiliate screens in `apps/admin` (shared design system): overview
+  with revenue KPIs, networks, merchants, products, links, clicks,
+  conversions & commissions (status filter + approve/reject/mark-paid),
+  and reconciliation — wired to the affiliate admin API when
+  `NEXT_PUBLIC_AFFILIATE_API_BASE_URL` is set, mock-fixture fallback
+  otherwise; nested admin sidebar navigation for the affiliate module.
+- Public site (`apps/web`): product and collection pages connected to the
+  live affiliate public API (DTO mapping, absolute go URL); new
+  `AffiliateBuyButton` client component that resolves the server-controlled
+  `/go/{token}` endpoint and redirects only after success, with
+  `rel="sponsored nofollow"` and double-click protection; disclosure badge
+  driven by the business layer's `disclosure_required` flag.
+- Shared core: `atoz_backend_core.uuids` (UUIDv7) and
+  `atoz_backend_core.slug` (slugify + unique slug) added; content-service
+  re-exports them so M4 tests stay green; all services pinned to
+  `atoz-backend-core==0.4.0`.
+- Infrastructure: `affiliate-service` added to `infra/docker/compose.yml`
+  (Postgres-backed, healthchecked, port 8300); CI database job now verifies
+  the affiliate migration head, upgrade, schema smoke (`\dt`), and
+  downgrade/re-upgrade on fresh PostgreSQL; Docker job adds the
+  affiliate-service compose health check.
+- Tests: 61 new backend tests (network/merchant/product/offer CRUD, link
+  signing/validation, redirect security, disabled/expired/revoked links,
+  open-redirect prevention, click recording, webhook signature + idempotency,
+  duplicate suppression, commission lifecycle, revenue attribution,
+  disclosure enforcement, RBAC, cross-niche isolation at repository/service/
+  HTTP level, migration upgrade/downgrade) — 215 total across the repo; 7 new
+  frontend tests (web live-affiliate-client mapping + admin affiliate screens
+  with axe WCAG checks) — 37 total (web 13, admin 16, design-system 8). No-AI guard, contract validation, ruff,
+  mypy, pip-audit, typecheck, lint, and production builds all green.
+
+### Security
+
+- Redirect resolver never trusts a browser-supplied destination URL; only
+  stored affiliate-link records resolved through HMAC-signed tokens.
+- Conversion webhooks require network-specific HMAC signatures; invalid
+  signatures are rejected before any database write; repeated delivery
+  cannot create duplicate commission records (unique constraint + event-log
+  correlation).
+- Affiliate admin routes require a valid gateway-issued JWT with
+  `affiliate:read`/`affiliate:write` claims plus a valid `X-Niche-Id`; dev
+  JWT, webhook, and token-signing secrets are local/test-only (production via
+  Vault). No network credentials are exposed to frontend clients.
+
 ## [0.4.0] - 2026-08-09
 
 ### Added

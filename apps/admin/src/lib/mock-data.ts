@@ -5,12 +5,19 @@
 
 import type { AdminNavItem } from "@atoz/design-system";
 import {
+  BadgeDollarSign,
   BarChart3,
   DollarSign,
   FileText,
+  Handshake,
   LayoutDashboard,
+  Link2,
+  MousePointerClick,
+  Network,
+  Package,
   Pin,
   Settings,
+  Store,
   Workflow,
 } from "lucide-react";
 
@@ -20,6 +27,22 @@ export const NAV_ITEMS: AdminNavItem[] = [
   { label: "Analytics", href: "/analytics", icon: BarChart3, section: "Operations" },
   { label: "Revenue", href: "/revenue", icon: DollarSign, section: "Operations" },
   { label: "Pinterest", href: "/pinterest", icon: Pin, section: "Channels" },
+  {
+    label: "Affiliate",
+    href: "/affiliate",
+    icon: Handshake,
+    section: "Monetization",
+    children: [
+      { label: "Overview", href: "/affiliate", icon: Handshake },
+      { label: "Networks", href: "/affiliate/networks", icon: Network },
+      { label: "Merchants", href: "/affiliate/merchants", icon: Store },
+      { label: "Products & offers", href: "/affiliate/products", icon: Package },
+      { label: "Links", href: "/affiliate/links", icon: Link2 },
+      { label: "Clicks", href: "/affiliate/clicks", icon: MousePointerClick },
+      { label: "Conversions", href: "/affiliate/conversions", icon: BadgeDollarSign },
+      { label: "Reconciliation", href: "/affiliate/reconciliation", icon: FileText },
+    ],
+  },
   { label: "Automation", href: "/automation", icon: Workflow, section: "Governance" },
   { label: "Settings", href: "/settings", icon: Settings, section: "Governance" },
 ];
@@ -31,6 +54,14 @@ export const PAGE_TITLES: Record<string, string> = {
   "/analytics": "Analytics",
   "/revenue": "Revenue",
   "/pinterest": "Pinterest",
+  "/affiliate": "Affiliate",
+  "/affiliate/networks": "Affiliate Networks",
+  "/affiliate/merchants": "Affiliate Merchants",
+  "/affiliate/products": "Affiliate Products",
+  "/affiliate/links": "Affiliate Links",
+  "/affiliate/clicks": "Affiliate Clicks",
+  "/affiliate/conversions": "Affiliate Conversions",
+  "/affiliate/reconciliation": "Affiliate Reconciliation",
   "/automation": "Automation",
   "/settings": "Settings",
 };
@@ -274,3 +305,185 @@ export function mockArticleBody(article: MockAdminArticle): string {
   }
   return "Draft content will be written here by the AI Content OS and reviewed by editors.\n\nSecond paragraph placeholder.";
 }
+
+// ------------------------------------------------------------- affiliate
+export const MOCK_AFFILIATE_NETWORKS = [
+  {
+    id: "nw-1",
+    code: "amazon",
+    name: "Amazon Associates",
+    status: "active",
+    feedType: "csv",
+    webhookSecretRef: "vault://affiliate/amazon/webhook-secret",
+    settingsJson: "{}",
+    createdAt: "2026-06-01T08:00:00Z",
+    updatedAt: "2026-08-01T08:00:00Z",
+  },
+  {
+    id: "nw-2",
+    code: "impact",
+    name: "Impact Radius",
+    status: "active",
+    feedType: "api",
+    webhookSecretRef: "vault://affiliate/impact/webhook-secret",
+    settingsJson: "{}",
+    createdAt: "2026-06-15T08:00:00Z",
+    updatedAt: "2026-08-01T08:00:00Z",
+  },
+];
+
+export const MOCK_AFFILIATE_MERCHANTS = [
+  {
+    id: "m-1",
+    networkId: "nw-1",
+    remoteMerchantId: "amz-merchant-1",
+    name: "Acme Kitchen Co.",
+    status: "active",
+    commissionTermsJson: '{"rate":"5%"}',
+  },
+  {
+    id: "m-2",
+    networkId: "nw-2",
+    remoteMerchantId: "imp-merchant-2",
+    name: "Trail & Travel",
+    status: "active",
+    commissionTermsJson: '{"rate":"8%"}',
+  },
+];
+
+export const MOCK_AFFILIATE_CATEGORIES = [
+  {
+    id: "ac-1",
+    nicheId: MOCK_NICHE_ID,
+    parentId: null,
+    name: "Cookware",
+    slug: "cookware",
+    path: null,
+    sortOrder: 1,
+    status: "active",
+  },
+];
+
+export const MOCK_AFFILIATE_PRODUCTS = [
+  {
+    id: "p-1",
+    nicheId: MOCK_NICHE_ID,
+    merchantId: "m-1",
+    sku: "SKU-PAN-1",
+    slug: "stainless-pan",
+    name: "Stainless Steel Pan",
+    excerpt: "A reliable do-everything pan.",
+    priceCents: 4500,
+    currency: "USD",
+    status: "active",
+    checksum: "abc123",
+    lastFeedAt: "2026-08-02T08:00:00Z",
+    deletedAt: null,
+    createdAt: "2026-07-01T08:00:00Z",
+    updatedAt: "2026-08-02T08:00:00Z",
+  },
+  {
+    id: "p-2",
+    nicheId: MOCK_NICHE_ID,
+    merchantId: "m-2",
+    sku: "SKU-BAG-1",
+    slug: "travel-backpack",
+    name: "Travel Backpack 28L",
+    excerpt: "Carry-on sized with laptop sleeve.",
+    priceCents: 12900,
+    currency: "USD",
+    status: "draft",
+    checksum: "def456",
+    lastFeedAt: null,
+    deletedAt: null,
+    createdAt: "2026-07-10T08:00:00Z",
+    updatedAt: "2026-07-20T08:00:00Z",
+  },
+];
+
+export const MOCK_AFFILIATE_LINKS = [
+  {
+    id: "l-1",
+    nicheId: MOCK_NICHE_ID,
+    productId: "p-1",
+    networkId: "nw-1",
+    networkLinkUrl: "https://partner.example.com/go?pid=100",
+    defaultCommissionRate: "5%",
+    status: "active",
+    disclosureRequired: true,
+    createdAt: "2026-07-01T08:00:00Z",
+    updatedAt: "2026-08-02T08:00:00Z",
+  },
+];
+
+export const MOCK_AFFILIATE_CLICKS = [
+  {
+    id: "c-1",
+    nicheId: MOCK_NICHE_ID,
+    linkTokenId: "t-1",
+    attributionId: "a-1",
+    revenueTransactionId: null,
+    clickedAt: "2026-08-08T14:22:00Z",
+    ipHash: "3f4a…",
+    userAgentHash: "9b2c…",
+    referrer: "https://pinterest.com/pin/123",
+    isBot: false,
+    fraudFlag: false,
+  },
+];
+
+export const MOCK_AFFILIATE_REVENUE = [
+  {
+    id: "r-1",
+    nicheId: MOCK_NICHE_ID,
+    networkId: "nw-1",
+    affiliateLinkId: "l-1",
+    affiliateClickId: "c-1",
+    networkTransactionId: "ntx-1001",
+    grossCents: 50000,
+    commissionCents: 2500,
+    currency: "USD",
+    status: "pending",
+    occurredAt: "2026-08-09T09:00:00Z",
+    reconciledAt: null,
+    createdAt: "2026-08-09T09:00:05Z",
+  },
+];
+
+export const MOCK_AFFILIATE_RECONCILIATIONS = [
+  {
+    id: "rc-1",
+    nicheId: MOCK_NICHE_ID,
+    networkId: "nw-1",
+    reportedAt: "2026-08-08T00:00:00Z",
+    expectedTotalCents: 2500,
+    actualTotalCents: 2500,
+    deltaCents: 0,
+    status: "matched",
+    reportRef: "amazon-2026-08-08.csv",
+    createdAt: "2026-08-09T03:00:00Z",
+  },
+];
+
+export const MOCK_AFFILIATE_SUMMARIES = [
+  {
+    id: "s-1",
+    nicheId: MOCK_NICHE_ID,
+    networkId: "nw-1",
+    summaryDate: "2026-08-09",
+    clicks: 128,
+    sales: 3,
+    grossCents: 150000,
+    commissionCents: 7500,
+    currency: "USD",
+  },
+];
+
+export const MOCK_AFFILIATE_DASHBOARD = {
+  totalCommissionCents: 7500,
+  approvedCommissionCents: 2500,
+  pendingCommissionCents: 5000,
+  paidCommissionCents: 0,
+  transactionCount: 3,
+  clickCount: 128,
+};

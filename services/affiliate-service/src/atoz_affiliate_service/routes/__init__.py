@@ -1,10 +1,7 @@
-"""Route registration for affiliate-service.
+"""Affiliate API routes: public reads, admin management, and webhooks."""
 
-M3 ships an empty router: business endpoints arrive with their module
-(Phase 4+). Only infrastructure routes (/health, /ready, /metrics) are
-active today via the shared app factory.
-"""
+from atoz_affiliate_service.routes.admin import router as admin_router
+from atoz_affiliate_service.routes.public import router as public_router
+from atoz_affiliate_service.routes.webhooks import router as webhook_router
 
-from fastapi import APIRouter
-
-router = APIRouter(tags=["affiliate-service"])
+__all__ = ["admin_router", "public_router", "webhook_router"]

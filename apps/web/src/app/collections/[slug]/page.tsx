@@ -60,7 +60,7 @@ export default async function AffiliateCollectionPage({ params }: PageProps) {
             key={product.slug}
             title={`${index + 1}. ${product.name}`}
             description={product.summary}
-            meta={`${product.price} · ★ ${product.rating.toFixed(1)}`}
+            meta={`${product.price}${product.rating !== undefined ? ` · ★ ${product.rating.toFixed(1)}` : ""}`}
             href={`/products/${product.slug}`}
             badge={<Badge variant="accent">#{(index + 1).toString().padStart(2, "0")}</Badge>}
           />

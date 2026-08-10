@@ -131,7 +131,7 @@ Backend (M3 — shared core, API gateway, and eight service skeletons):
 ```bash
 make setup        # create .venv; install backend-core, gateway, and services
 make check        # lint, format check, typecheck, no-AI guard, contract check, tests
-make docker-up    # build and start api, aios-bridge, postgres, redis (compose)
+make docker-up    # build and start api, aios-bridge, content + affiliate services, postgres, redis (compose)
 make health       # GET /health on the gateway
 ```
 
@@ -158,6 +158,31 @@ content API is configured:
 - `NEXT_PUBLIC_NICHE_SLUG` — niche slug for the public site (default `kitchen`).
 - `NEXT_PUBLIC_NICHE_ID` / `NEXT_PUBLIC_ADMIN_TOKEN` — dev admin tenancy + JWT.
 
+Affiliate (M5 — `services/affiliate-service`): the affiliate module owns the
+affiliate database (`affiliate_db`) with its own Alembic migration stream
+(ADR-0005). Migrations run from the service directory:
+
+```bash
+cd services/affiliate-service
+DATABASE_URL="postgresql+asyncpg://atoz:atoz@localhost:5432/atoz"   python -m alembic -c db/migrations/alembic.ini upgrade head
+```
+
+The service serves the public product/collection reads, the admin affiliate
+catalog, the server-controlled `/api/v1/public/go/{token}` redirector, and
+the conversion webhook receiver (`POST /webhooks/v1/{network_code}/conversion`
+with HMAC signature verification and idempotent ingestion). Webhook secrets,
+the link-token signing key, and the JWT secret default to dev-only values and
+must be provisioned via Vault in production. Frontends use mock fixtures
+unless the affiliate API is configured:
+
+- `NEXT_PUBLIC_AFFILIATE_API_BASE_URL` — public affiliate API base (web + admin).
+- `NEXT_PUBLIC_NICHE_SLUG` — niche slug for the public site (default `kitchen`).
+
+The affiliate business layer never performs AI work: product selection,
+recommendations, and intelligence belong to the Universal AI Content
+Operating System and enter the website only through the AI OS Bridge
+(Website Architecture Contract, ADR-0005 §Contract compliance).
+
 Frontend (M2 — web + admin wireframes on the shared design system):
 
 ```bash
@@ -170,7 +195,7 @@ npm test          # vitest + axe a11y tests (all workspaces)
 npm run build     # next build (web + admin)
 ```
 
-The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), M3 (backend foundation), and M4 (CMS business layer) are complete; M5 (authentication hardening + CMS follow-ups) is next.
+The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), M3 (backend foundation), M4 (CMS business layer), and M5 (affiliate engine) are complete; M6 (Pinterest business layer) is next.
 
 ---
 

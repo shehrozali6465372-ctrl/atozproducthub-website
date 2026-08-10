@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "atoz-backend-core"
-version = "0.3.0"
+version = "0.4.0"
 description = "Shared backend foundation for AtozProductHub business services (ADR-0003). Infrastructure primitives only - no business logic."
 requires-python = ">=3.11"
 dependencies = [

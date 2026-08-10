@@ -9,6 +9,8 @@ export interface AdminNavItem {
   href: string;
   icon: LucideIcon;
   section: string;
+  /** Optional nested items (e.g. affiliate module sub-screens). */
+  children?: Array<Omit<AdminNavItem, "section" | "children">>;
 }
 
 /**
@@ -80,6 +82,36 @@ export function AdminSidebar({
                             <item.icon aria-hidden="true" className="size-5 shrink-0" />
                             {item.label}
                           </a>
+                          {item.children ? (
+                            <ul className="ml-3 mt-1 space-y-1 border-l border-border pl-2">
+                              {item.children.map((child) => {
+                                const childActive =
+                                  pathname === child.href ||
+                                  pathname.startsWith(child.href);
+                                return (
+                                  <li key={child.href}>
+                                    <a
+                                      href={child.href}
+                                      aria-current={childActive ? "page" : undefined}
+                                      onClick={onClose}
+                                      className={cn(
+                                        "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium",
+                                        childActive
+                                          ? "bg-primary-500/10 text-primary-500"
+                                          : "text-text-600 hover:bg-surface-2 hover:text-text-900",
+                                      )}
+                                    >
+                                      <child.icon
+                                        aria-hidden="true"
+                                        className="size-4 shrink-0"
+                                      />
+                                      {child.label}
+                                    </a>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          ) : null}
                         </li>
                       );
                     })}

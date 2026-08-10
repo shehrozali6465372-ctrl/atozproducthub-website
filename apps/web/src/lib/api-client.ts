@@ -17,11 +17,11 @@ import {
 /**
  * Typed API client for the public website.
  *
- * M4: the content namespace now talks to the real content-service Public
- * Read API (12-api-contracts.md §3-4) when NEXT_PUBLIC_CONTENT_API_BASE_URL
- * is set. Without the env var the client keeps the M2 mock fixtures, so the
- * site builds and runs standalone. The affiliate/pinterest namespaces remain
- * mock-based until their milestones — M4 is CMS-only.
+ * M4/M5: the content and affiliate namespaces talk to the real content and
+ * affiliate service Public Read APIs when their base URLs are set. Without
+ * the env vars the client keeps the M2 mock fixtures, so the site builds and
+ * runs standalone. The pinterest namespace remains mock-based until its
+ * milestone.
  *
  * The website never talks to an AI model: all intelligence arrives through
  * the AI OS Bridge (Website Contract §4).
@@ -91,6 +91,7 @@ interface PageDto<T> {
 }
 
 const CONTENT_API_BASE = process.env.NEXT_PUBLIC_CONTENT_API_BASE_URL ?? "";
+const AFFILIATE_API_BASE = process.env.NEXT_PUBLIC_AFFILIATE_API_BASE_URL ?? "";
 const NICHE_SLUG = process.env.NEXT_PUBLIC_NICHE_SLUG ?? "kitchen";
 
 function formatPublishedAt(value: string): string {
@@ -114,6 +115,83 @@ function toArticle(dto: PublicArticleDto): Article {
     body: dto.body,
   };
 }
+
+// -------------------------------------------------- affiliate live DTOs
+interface PublicProductCategoryDto {
+  slug: string;
+  name: string;
+  path: string | null;
+}
+
+interface PublicProductDto {
+  id: string;
+  slug: string;
+  name: string;
+  excerpt: string;
+  price_cents: number;
+  currency: string;
+  category: PublicProductCategoryDto | null;
+  merchant_name: string;
+  network_name: string;
+  disclosure_required: boolean;
+  buy_url: string | null;
+}
+
+function formatPrice(cents: number, currency: string): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+  }).format(cents / 100);
+}
+
+function toProduct(dto: PublicProductDto): Product {
+  return {
+    slug: dto.slug,
+    name: dto.name,
+    price: formatPrice(dto.price_cents, dto.currency),
+    summary: dto.excerpt,
+    // The go endpoint returns JSON, so the client component resolves it and
+    // navigates; the relative path from the API is made absolute here.
+    buyUrl: dto.buy_url
+      ? new URL(dto.buy_url, AFFILIATE_API_BASE).toString()
+      : undefined,
+    disclosureRequired: dto.disclosure_required,
+  };
+}
+
+const liveAffiliateClient = {
+  async listCollections(): Promise<Collection[]> {
+    const categories = await fetchJson<PublicProductCategoryDto[]>(
+      `${AFFILIATE_API_BASE}/api/v1/public/product-categories?niche=${encodeURIComponent(NICHE_SLUG)}`,
+    );
+    return categories.map((category) => ({
+      slug: category.slug,
+      title: category.name,
+      description: category.path ?? category.name,
+      productCount: 0,
+    }));
+  },
+  async getCollection(slug: string): Promise<Collection | null> {
+    const collections = await liveAffiliateClient.listCollections();
+    return collections.find((collection) => collection.slug === slug) ?? null;
+  },
+  async listProducts(): Promise<Product[]> {
+    const data = await fetchJson<PageDto<PublicProductDto>>(
+      `${AFFILIATE_API_BASE}/api/v1/public/products?niche=${encodeURIComponent(NICHE_SLUG)}&page_size=100`,
+    );
+    return data.items.map(toProduct);
+  },
+  async getProduct(slug: string): Promise<Product | null> {
+    try {
+      const data = await fetchJson<PublicProductDto>(
+        `${AFFILIATE_API_BASE}/api/v1/public/products/${encodeURIComponent(slug)}?niche=${encodeURIComponent(NICHE_SLUG)}`,
+      );
+      return toProduct(data);
+    } catch {
+      return null;
+    }
+  },
+};
 
 // -------------------------------------------------------------- mock client
 const delay = <T>(value: T): Promise<T> =>
@@ -201,12 +279,12 @@ const liveContentClient = {
   },
 };
 
-const liveApiClient: ApiClient = {
-  content: liveContentClient,
-  affiliate: mockApiClient.affiliate,
-  pinterest: mockApiClient.pinterest,
-};
-
 export function createApiClient(): ApiClient {
-  return CONTENT_API_BASE ? liveApiClient : mockApiClient;
+  // Each namespace goes live independently: without its base URL the client
+  // keeps the M2 mock fixtures so the site builds and runs standalone.
+  return {
+    content: CONTENT_API_BASE ? liveContentClient : mockApiClient.content,
+    affiliate: AFFILIATE_API_BASE ? liveAffiliateClient : mockApiClient.affiliate,
+    pinterest: mockApiClient.pinterest,
+  };
 }

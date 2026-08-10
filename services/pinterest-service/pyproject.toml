@@ -8,7 +8,7 @@ version = "0.3.0"
 description = "Pinterest accounts (10+), boards, pins, and scheduling — skeleton only."
 requires-python = ">=3.11"
 dependencies = [
-    "atoz-backend-core==0.3.0",
+    "atoz-backend-core==0.4.0",
     "uvicorn[standard]>=0.30,<1",
 ]
 

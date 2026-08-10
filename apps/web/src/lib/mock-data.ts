@@ -37,10 +37,15 @@ export interface MockProduct {
   slug: string;
   name: string;
   price: string;
-  rating: number;
-  pros: string[];
-  cons: string[];
+  /** Optional until live affiliate data supplies them (M5). */
+  rating?: number;
+  pros?: string[];
+  cons?: string[];
   summary: string;
+  /** Server-controlled redirect URL (M5); falls back to "#" for mocks. */
+  buyUrl?: string;
+  /** Required-disclosure flag from the affiliate business layer (M5). */
+  disclosureRequired?: boolean;
 }
 
 export interface MockPin {

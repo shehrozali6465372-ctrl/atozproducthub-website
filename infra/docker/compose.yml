@@ -78,6 +78,34 @@ services:
       retries: 5
       start_period: 5s
 
+  affiliate-service:
+    build:
+      context: ../..
+      dockerfile: services/affiliate-service/Dockerfile
+    ports:
+      - "8300:8000"
+    environment:
+      APP_ENV: dev
+      APP_LOG_LEVEL: INFO
+      # Business data lives in the shared Postgres (affiliate_db schema
+      # tables are created by the affiliate-service migrations).
+      DATABASE_URL: postgresql+asyncpg://atoz:atoz@postgres:5432/atoz
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
   postgres:
     image: postgres:16-alpine
     environment:

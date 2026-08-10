@@ -80,6 +80,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e "libs/backend-core[dev]"
           pip install -e "services/content-service[dev]"
+          pip install -e "services/affiliate-service[dev]"
       - name: Verify single migration head
         working-directory: services/content-service
         run: python -m alembic -c db/migrations/alembic.ini heads | grep -c "(head)" | grep -q 1
@@ -93,7 +94,27 @@ jobs:
           PGPASSWORD: atoz
         run: |
           psql -h localhost -U atoz -d atoz -c "\dt" | grep -E "niches|articles|article_versions|categories|article_categories|tags|article_tags"
-      - name: Downgrade + re-upgrade (repeatable migrations)
+      - name: Verify single migration head (affiliate)
+        working-directory: services/affiliate-service
+        run: python -m alembic -c db/migrations/alembic.ini heads | grep -c "(head)" | grep -q 1
+      - name: Migrate fresh PostgreSQL (affiliate upgrade head)
+        working-directory: services/affiliate-service
+        env:
+          DATABASE_URL: postgresql+asyncpg://atoz:atoz@localhost:5432/atoz
+        run: python -m alembic -c db/migrations/alembic.ini upgrade head
+      - name: Verify affiliate schema on PostgreSQL
+        env:
+          PGPASSWORD: atoz
+        run: |
+          psql -h localhost -U atoz -d atoz -c "\dt" | grep -E "affiliate_niches|affiliate_networks|affiliate_merchants|affiliate_products|product_categories|product_category_links|affiliate_links|link_tokens|affiliate_clicks|click_attributions|revenue_transactions|revenue_reconciliations|revenue_summaries|affiliate_webhook_logs"
+      - name: Downgrade + re-upgrade (affiliate repeatable migrations)
+        working-directory: services/affiliate-service
+        env:
+          DATABASE_URL: postgresql+asyncpg://atoz:atoz@localhost:5432/atoz
+        run: |
+          python -m alembic -c db/migrations/alembic.ini downgrade base
+          python -m alembic -c db/migrations/alembic.ini upgrade head
+      - name: Downgrade + re-upgrade (content repeatable migrations)
         working-directory: services/content-service
         env:
           DATABASE_URL: postgresql+asyncpg://atoz:atoz@localhost:5432/atoz
@@ -168,6 +189,17 @@ jobs:
             sleep 2
           done
           echo "content-service health check failed" >&2
+          exit 1
+      - name: Health check (affiliate-service)
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8300/health; then
+              echo "affiliate-service health OK"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "affiliate-service health check failed" >&2
           exit 1
       - name: Compose down
         if: always()

@@ -204,6 +204,11 @@ For every phase: Goal, Scope, Deliverables, Dependencies, Complexity, Risk, Succ
 
 ### Phase 7 — Affiliate Engine
 
+- **Status:** ✅ Complete (M5, v0.5.0 — ADR-0005). First network webhook
+  ingestion, signed redirector, click/conversion ledgers, commission
+  lifecycle, disclosure enforcement, and admin/public affiliate UI are
+  implemented and tested. Follow-ups: outbound network feed adapters and
+  production reconciliation job automation.
 - **Goal:** The monetization core: product catalog, link tokens, click attribution, and revenue ledger.
 - **Scope:** `affiliate-service` (networks, merchants, products, product categories, links, tokens, clicks, attributions, revenue, reconciliation); first network adapter; `/go/{token}` redirector; product and collection pages in `apps/web`; disclosure UI enforced by templates; click/revenue events.
 - **Deliverables:** product ingest from one network; redirect with attribution + dedupe; commission webhook processing; product pages with disclosure; revenue summaries; reconciliation job.

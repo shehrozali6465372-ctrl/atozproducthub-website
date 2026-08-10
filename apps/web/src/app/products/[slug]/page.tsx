@@ -11,6 +11,7 @@ import {
   SectionHeading,
 } from "@atoz/design-system";
 import { createApiClient } from "@/lib/api-client";
+import { AffiliateBuyButton } from "@/components/affiliate-buy-button";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -65,7 +66,9 @@ export default async function ProductPage({ params }: PageProps) {
         <div className="lg:col-span-5">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="accent">Affiliate product</Badge>
-            <Badge variant="neutral">★ {product.rating.toFixed(1)} / 5</Badge>
+            {product.rating !== undefined && (
+              <Badge variant="neutral">★ {product.rating.toFixed(1)} / 5</Badge>
+            )}
           </div>
           <h1 className="mt-3 text-3xl font-bold tracking-tight text-text-900">
             {product.name}
@@ -75,41 +78,49 @@ export default async function ProductPage({ params }: PageProps) {
           </p>
           <p className="mt-4 text-text-600">{product.summary}</p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Button asChild size="lg">
-              <a href="#" rel="sponsored nofollow">
-                Buy now
-              </a>
-            </Button>
+            {product.buyUrl ? (
+              <AffiliateBuyButton goUrl={product.buyUrl} />
+            ) : (
+              <Button asChild size="lg">
+                <a href="#" rel="sponsored nofollow">
+                  Buy now
+                </a>
+              </Button>
+            )}
             <Button asChild variant="outline" size="lg">
               <a href={`/collections/sample-collection`}>View collection</a>
             </Button>
           </div>
-          <DisclosureBadge className="mt-6" />
+          {product.disclosureRequired !== false && <DisclosureBadge className="mt-6" />}
           <div className="mt-8 grid gap-6 sm:grid-cols-2">
-            <Card title="Pros">
-              <ul className="space-y-2 text-sm text-text-600">
-                {product.pros.map((pro) => (
-                  <li key={pro} className="flex gap-2">
-                    <span aria-hidden="true" className="text-success-500">
-                      +
-                    </span>
-                    {pro}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-            <Card title="Cons">
-              <ul className="space-y-2 text-sm text-text-600">
-                {product.cons.map((con) => (
-                  <li key={con} className="flex gap-2">
-                    <span aria-hidden="true" className="text-danger-500">
-                      −
-                    </span>
-                    {con}
-                  </li>
-                ))}
-              </ul>
-            </Card>
+            {product.pros !== undefined && (
+              <Card title="Pros">
+                <ul className="space-y-2 text-sm text-text-600">
+                  {product.pros.map((pro) => (
+                    <li key={pro} className="flex gap-2">
+                      <span aria-hidden="true" className="text-success-500">
+                        +
+                      </span>
+                      {pro}
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+            {product.cons !== undefined && (
+              <Card title="Cons">
+                <ul className="space-y-2 text-sm text-text-600">
+                  {product.cons.map((con) => (
+                    <li key={con} className="flex gap-2">
+                      <span aria-hidden="true" className="text-danger-500">
+                        −
+                      </span>
+                      {con}
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
           </div>
           <Card className="mt-6" title="Frequently asked questions">
             <div className="space-y-3">
