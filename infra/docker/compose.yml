@@ -106,6 +106,35 @@ services:
       retries: 5
       start_period: 5s
 
+  pinterest-service:
+    build:
+      context: ../..
+      dockerfile: services/pinterest-service/Dockerfile
+    ports:
+      - "8400:8000"
+    environment:
+      APP_ENV: dev
+      APP_LOG_LEVEL: INFO
+      # Business data lives in the shared Postgres (pinterest_db schema
+      # tables are created by the pinterest-service migrations); token
+      # VALUES stay out of the database (Vault boundary).
+      DATABASE_URL: postgresql+asyncpg://atoz:atoz@postgres:5432/atoz
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
   postgres:
     image: postgres:16-alpine
     environment:

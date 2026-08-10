@@ -20,8 +20,7 @@ import {
  * M4/M5: the content and affiliate namespaces talk to the real content and
  * affiliate service Public Read APIs when their base URLs are set. Without
  * the env vars the client keeps the M2 mock fixtures, so the site builds and
- * runs standalone. The pinterest namespace remains mock-based until its
- * milestone.
+ * runs standalone. The pinterest namespace (M6) follows the same rule.
  *
  * The website never talks to an AI model: all intelligence arrives through
  * the AI OS Bridge (Website Contract §4).
@@ -90,8 +89,22 @@ interface PageDto<T> {
   total: number;
 }
 
+interface PublicPinDto {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  board: string;
+  account_name: string;
+  destination_url: string;
+  pin_url: string;
+  published_at: string | null;
+  saves: string;
+}
+
 const CONTENT_API_BASE = process.env.NEXT_PUBLIC_CONTENT_API_BASE_URL ?? "";
 const AFFILIATE_API_BASE = process.env.NEXT_PUBLIC_AFFILIATE_API_BASE_URL ?? "";
+const PINTEREST_API_BASE = process.env.NEXT_PUBLIC_PINTEREST_API_BASE_URL ?? "";
 const NICHE_SLUG = process.env.NEXT_PUBLIC_NICHE_SLUG ?? "kitchen";
 
 function formatPublishedAt(value: string): string {
@@ -193,6 +206,38 @@ const liveAffiliateClient = {
   },
 };
 
+// ------------------------------------------------------------- pinterest
+const livePinterestClient: ApiClient["pinterest"] = {
+  async listRecentPins(): Promise<Pin[]> {
+    const data = await fetchJson<PageDto<PublicPinDto>>(
+      `${PINTEREST_API_BASE}/api/v1/public/pins?niche=${encodeURIComponent(NICHE_SLUG)}&limit=100`,
+    );
+    return data.items.map((pin) => ({
+      slug: pin.slug || pin.id,
+      title: pin.title,
+      board: pin.board || pin.account_name,
+      saves: pin.saves || "",
+    }));
+  },
+  async getLandingPage(slug) {
+    try {
+      const pins = await livePinterestClient.listRecentPins();
+      const pin = pins.find((item) => item.slug === slug);
+      if (!pin) return null;
+      const articles = await liveContentClient.listArticles();
+      return {
+        title: pin.title,
+        intro:
+          "You saved a pin — here is the full guide behind it. Honest testing, clear recommendations, and zero hype.",
+        articles,
+        pins,
+      };
+    } catch {
+      return null;
+    }
+  },
+};
+
 // -------------------------------------------------------------- mock client
 const delay = <T>(value: T): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(value), 0));
@@ -285,6 +330,6 @@ export function createApiClient(): ApiClient {
   return {
     content: CONTENT_API_BASE ? liveContentClient : mockApiClient.content,
     affiliate: AFFILIATE_API_BASE ? liveAffiliateClient : mockApiClient.affiliate,
-    pinterest: mockApiClient.pinterest,
+    pinterest: PINTEREST_API_BASE ? livePinterestClient : mockApiClient.pinterest,
   };
 }

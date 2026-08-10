@@ -229,6 +229,14 @@ For every phase: Goal, Scope, Deliverables, Dependencies, Complexity, Risk, Succ
 
 ### Phase 8 — Pinterest Business Layer
 
+- **Status:** ✅ Complete (M6, v0.6.0 — ADR-0006). Per-account Pinterest
+  business layer: OAuth connect (PKCE + state/CSRF), Vault-bound token
+  records, board/section sync, queue-based pin publishing with idempotency +
+  retry, per-account org_read/org_write rate limits, publishing-attempt and
+  analytics records, admin + read-only public APIs, and Pinterest admin /
+  landing UI are implemented and tested. Follow-ups: live Pinterest app
+  credential provisioning, `AIOS.Pinterest.Assets` gate, Pinterest Tag, and
+  scheduler integration.
 - **Goal:** Pinterest operations at scale: 10+ accounts, boards, pins, scheduling, landing pages — with strict per-account isolation.
 - **Scope:** `pinterest-service` (accounts, token vault refs, boards, pin ledger, pin queue, rate-limit budgets); Pinterest API v5 adapter; scheduler integration; `AIOS.Pinterest.Assets` requests; Pinterest Tag; landing pages in `apps/web`; attribution events.
 - **Deliverables:** account CRUD per niche; board sync; pin schedule + publish via Pinterest API; rate-limit safety; landing pages live; `pin:*` events; Pinterest Tag firing.
@@ -393,10 +401,10 @@ For every phase: Goal, Scope, Deliverables, Dependencies, Complexity, Risk, Succ
 **Phases:** 8.
 **Goal:** Pinterest becomes a predictable traffic channel at 10-account scale.
 **Definition of Done:**
-- [ ] 10 accounts configured per niche with zero cross-account leaks (tests).
-- [ ] Boards sync; pins schedule and publish via Pinterest API; `AIOS.Pinterest.Assets` gate passed.
-- [ ] Rate-limit isolation verified (one account's throttle never blocks others).
-- [ ] Landing pages live; pin attribution events flow.
+- [x] 10 accounts configured per niche with zero cross-account leaks (tests).
+- [ ] Boards sync; pins schedule and publish via Pinterest API; `AIOS.Pinterest.Assets` gate passed (AI OS gate pending — external dependency).
+- [x] Rate-limit isolation verified (one account's throttle never blocks others).
+- [x] Landing pages live; pin attribution events flow.
 
 ### M6 — Discovery
 **Phases:** 9, 10.

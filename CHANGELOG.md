@@ -6,6 +6,65 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-10
+
+### Added
+
+- Implemented M6 Pinterest Business Layer (traffic milestone) — ADR-0006
+  freezes pinterest-service ownership of `pinterest_db` (own Alembic
+  version table alongside content/affiliate streams), the local niche
+  tenancy mirror, mandatory `niche_id` + `pinterest_account_id` dual
+  scoping, Vault-bound token storage (token VALUES never enter the
+  database), OAuth 2.0 authorization-code + PKCE + per-account state/CSRF,
+  per-account `org_read`/`org_write` rate limiting, queue-based publishing
+  with idempotency + retry, append-only publishing-attempt ledger, and
+  per-account analytics as business data only.
+- `services/pinterest-service` v0.6.0:
+  - Domain layer: `pinterest_niches` (local mirror), `pinterest_accounts`,
+    `pinterest_tokens` (Vault refs + expiry metadata only),
+    `pinterest_boards`, `board_sections`, `pinterest_pins` (append-only
+    ledger), `pin_queue_items`, `pin_publish_attempts`, and
+    `pinterest_analytics` — every account-scoped record carries `niche_id`
+    AND `pinterest_account_id`; composite unique constraints prevent
+    cross-account/cross-niche duplicates; UUIDv7 keys.
+  - Repository layer: account-scoped repositories that reject any
+    account-scoped query without account context (`AccountIsolationError`),
+    append-only pin ledger (no delete path), composite-unique checksum
+    dedupe per account, and a typed `PinterestUnitOfWork`.
+  - Service layer: `PinterestService` facade with niche mirror CRUD,
+    per-account CRUD, `start_connect`/`complete_connect` OAuth flow
+    (state verification + double CSRF binding + PKCE + token exchange +
+    Vault write), `disconnect_account` (soft revoke), token refresh with
+    60s expiry margin + refresh-token rotation, board/section sync,
+    pin draft → enqueue → publish lifecycle (`publish_due` worker entry
+    point), cancel, per-account analytics upsert, and public reads.
+    Domain events: `pin:scheduled.v1`, `pin:published.v1`, `pin:failed.v1`,
+    `account:connected.v1`, `account:disconnected.v1`.
+  - Typed Pinterest API v5 client: boards CRUD, board sections, pins
+    create/read/delete, bookmark pagination, 401-refresh-and-retry once,
+    401/403/429/5xx classification, exponential backoff + full jitter,
+    `Retry-After` honored, per-account token buckets by category (never a
+    global limiter).
+  - Alembic migration `0001` (portable SQLite/PostgreSQL) with all
+    blueprint indexes, unique constraints, and FKs; CI validates the
+    Pinterest migration stream against the same fresh PostgreSQL 16 used
+    for content and affiliate, including downgrade/re-upgrade.
+  - API: read-only public API (`/api/v1/public/{accounts,boards,pins}` by
+    niche slug), admin API (`/api/v1/admin/*` with JWT RBAC
+    `pinterest:read`/`pinterest:write` + mandatory `X-Niche-Id`), and the
+    OAuth callback (`/oauth/callback`). Token VALUES never appear in
+    responses or logs.
+- Docker Compose: `pinterest-service` (port 8400) with Postgres dependency
+  and healthcheck; CI builds the image and smoke-tests `/health`.
+- Frontend: `apps/web` Pinterest namespace wired to the live public
+  Pinterest API via `NEXT_PUBLIC_PINTEREST_API_BASE_URL` (mock-fixture
+  fallback); `apps/admin` Pinterest screen shows accounts + pin queue with
+  per-account rate-limit status.
+- Docs: ADR-0006 freezes the Pinterest architecture decisions; README,
+  implementation roadmap (Phase 8 + M5 milestone), and this changelog
+  updated. No AI functionality was introduced; the no-AI guard, contract
+  validation, and dependency audit remain green.
+
 ## [0.5.0] - 2026-08-10
 
 ### Added

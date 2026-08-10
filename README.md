@@ -183,6 +183,38 @@ recommendations, and intelligence belong to the Universal AI Content
 Operating System and enter the website only through the AI OS Bridge
 (Website Architecture Contract, ADR-0005 §Contract compliance).
 
+Pinterest (M6 — `services/pinterest-service`): the Pinterest module owns the
+Pinterest database (`pinterest_db`) with its own Alembic migration stream
+(ADR-0006). Migrations run from the service directory:
+
+```bash
+cd services/pinterest-service
+DATABASE_URL="postgresql+asyncpg://atoz:atoz@localhost:5432/atoz" \
+  python -m alembic -c db/migrations/alembic.ini upgrade head
+```
+
+The service manages 10+ independent Pinterest accounts per niche with strict
+`pinterest_account_id` isolation: OAuth 2.0 authorization-code connect
+(PKCE + per-account state/CSRF), Vault-bound token records (token VALUES
+never touch the database), typed Pinterest API v5 client with per-account
+`org_read`/`org_write` rate limits, board/section sync, queue-based pin
+publishing with idempotency + retry and a complete publishing-attempt
+ledger, and per-account analytics storage. Admin API (`/api/v1/admin/*` with
+JWT RBAC `pinterest:read`/`pinterest:write` + mandatory `X-Niche-Id`) and a
+read-only public API (`/api/v1/public/*` by niche slug) are included. OAuth
+client credentials, the state secret, and the JWT secret default to dev-only
+values and must be provisioned via Vault in production; live Pinterest
+connect requires a real Pinterest app and authorized users (Trial access is
+not enough for production behavior). Frontends use mock fixtures unless the
+Pinterest API is configured:
+
+- `NEXT_PUBLIC_PINTEREST_API_BASE_URL` — public Pinterest API base (web).
+
+The Pinterest business layer never performs AI work: pin design, copy, and
+targeting intelligence belong to the Universal AI Content Operating System
+and enter the website only through the AI OS Bridge (ADR-0006
+§Contract compliance).
+
 Frontend (M2 — web + admin wireframes on the shared design system):
 
 ```bash
@@ -195,7 +227,7 @@ npm test          # vitest + axe a11y tests (all workspaces)
 npm run build     # next build (web + admin)
 ```
 
-The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), M3 (backend foundation), M4 (CMS business layer), and M5 (affiliate engine) are complete; M6 (Pinterest business layer) is next.
+The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), M3 (backend foundation), M4 (CMS business layer), M5 (affiliate engine), and M6 (Pinterest business layer) are complete; M7+ (SEO, analytics, automation, production) follow.
 
 ---
 

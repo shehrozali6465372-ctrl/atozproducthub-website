@@ -1,3 +1,3 @@
-"""Pinterest accounts (10+), boards, pins, and scheduling — skeleton only."""
+"""Pinterest accounts (10+), boards, pins, queue, and publishing — M6."""
 
-__version__ = "0.3.0"
+__version__ = "0.6.0"

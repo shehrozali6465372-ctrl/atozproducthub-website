@@ -1,10 +1,7 @@
-"""Route registration for pinterest-service.
+"""Pinterest API routes: admin management, public reads, and OAuth callback."""
 
-M3 ships an empty router: business endpoints arrive with their module
-(Phase 4+). Only infrastructure routes (/health, /ready, /metrics) are
-active today via the shared app factory.
-"""
+from atoz_pinterest_service.routes.admin import router as admin_router
+from atoz_pinterest_service.routes.oauth import router as oauth_router
+from atoz_pinterest_service.routes.public import router as public_router
 
-from fastapi import APIRouter
-
-router = APIRouter(tags=["pinterest-service"])
+__all__ = ["admin_router", "public_router", "oauth_router"]
