@@ -107,7 +107,7 @@ def test_migrations_upgrade_downgrade_upgrade_on_clean_database(
         # Downgrade removes every table, upgrade restores them (repeatable).
         command.downgrade(_alembic_config(database_url), "base")
         # Alembic keeps its own version table; all content tables are gone.
-        assert _tables(database_url) <= {"alembic_version"}
+        assert _tables(database_url) <= {"alembic_version_content"}
 
         command.upgrade(_alembic_config(database_url), "head")
         assert EXPECTED_TABLES <= _tables(database_url)

@@ -28,6 +28,10 @@ unspecified, so this ADR freezes those decisions.
 
 - The affiliate module gets its own schema and its own Alembic migration
   stream (`services/affiliate-service/db/migrations/`), revision `0001`.
+- Each service owns a distinct Alembic version table
+  (`alembic_version_affiliate`, `alembic_version_content`) so both streams
+  can be applied to the same physical database without one no-op'ing on the
+  other's revision row.
 - `affiliate_db` contains only business data: local niche mirror, networks,
   merchants, products, product categories, links, link tokens, clicks,
   attributions, revenue transactions, reconciliations, revenue summaries,

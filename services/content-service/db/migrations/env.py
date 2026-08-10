@@ -29,19 +29,27 @@ def _url() -> str:
     return settings.database_url or config.get_main_option("sqlalchemy.url", "")
 
 
+VERSION_TABLE = "alembic_version_content"
+
+
 def run_migrations_offline() -> None:
     context.configure(
         url=_url(),
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        version_table=VERSION_TABLE,
     )
     with context.begin_transaction():
         context.run_migrations()
 
 
 def do_run_migrations(connection: Any) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        version_table=VERSION_TABLE,
+    )
     with context.begin_transaction():
         context.run_migrations()
 
