@@ -6,6 +6,74 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-11
+
+### Added
+
+- Implemented M8 Analytics Business Layer (measurement milestone) —
+  ADR-0008 freezes analytics-service ownership of `analytics_db` (own
+  Alembic version table alongside content/affiliate/pinterest/seo
+  streams), the local niche tenancy mirror, the append-only event ledger
+  with unique `event_id` idempotency, the PostgreSQL → Kafka → ClickHouse
+  event pipeline, daily/weekly rollups into read models, and the AI OS
+  boundary where insights are read-only attributed data that can arrive
+  only through the AI OS Bridge.
+- `services/analytics-service` v0.8.0:
+  - Domain layer: `analytics_niches` (local mirror), `analytics_event_ledger`
+    (append-only, unique `event_id`, `niche_id` + optional
+    `pinterest_account_id`), `traffic_daily`, `visitor_daily`,
+    `daily_metrics`, and `kpi_snapshots` — every business record carries
+    `niche_id`; Pinterest rows carry `pinterest_account_id` so 10 accounts
+    never mix; UUIDv7 keys.
+  - Pipeline: `EventBackbone`/`Warehouse` ABCs with in-memory dev/CI
+    implementations and lazy Kafka (`KAFKA_ENABLED=true`) and ClickHouse
+    (`WAREHOUSE_ENABLED=true`) transports; a `PipelineWorker` drains the
+    backbone into the warehouse.
+  - Collector: `/collect/v1/events` and `/collect/v1/events/batch` with
+    slug-based niche tenancy, `event_id` idempotency, per-item batch
+    failure isolation, server-side timestamps, size limits, and a
+    sensitive-trait guard (email/phone/password/ssn/credit_card/token/
+    authorization/api_key traits are rejected).
+  - Webhook: `/webhooks/v1/analytics/events` HMAC-SHA256 verified with the
+    shared `event_webhook_secret`; maps `content:*`, `pin:*`, `product:*`,
+    `affiliate:click`, `revenue:attributed`, and `seo:sitemap-rebuilt`
+    domain events into internal analytics events; unknown types rejected.
+  - Service layer: `AnalyticsService` facade with niche mirror CRUD,
+    idempotent ingest, rollups (daily + weekly on Sundays, idempotent
+    upserts), traffic/visitor/metrics/top-pages/overview/events/KPI reads,
+    and pipeline status. Domain event: `analytics:rollup-completed.v1`.
+  - API: read-only admin API (`/api/v1/admin/*` with JWT RBAC
+    `analytics:read`/`analytics:write` + mandatory `X-Niche-Id`).
+- Analytics dashboard (`apps/admin`): the analytics and revenue pages now
+  connect to the live analytics API via the typed `api.analytics.*` client
+  namespace when `NEXT_PUBLIC_ANALYTICS_API_BASE_URL` is set — KPI cards
+  (sessions, pageviews, visitors, bounce rate, affiliate clicks,
+  conversions, revenue, pin clicks), weekly session chart, traffic-source
+  donut, affiliate/revenue metric chart, and top-pages table, with
+  server-driven date-range filters (`?range=30d|90d|ytd`). Mock fixtures
+  remain the standalone default.
+- Tests: collector validation/idempotency/sensitive-data guard, batch
+  isolation, webhook signature verification + idempotency + unknown-type
+  rejection, rollup correctness, pipeline draining, repository append-only
+  enforcement, admin API RBAC, cross-niche and cross-account isolation
+  (10 simulated accounts), migration upgrade/downgrade/re-upgrade, and
+  HTTP-level tenancy.
+- Docker Compose: `analytics-service` (port 8600) plus Kafka (with
+  Zookeeper) and ClickHouse with healthchecks; CI builds the image,
+  smoke-tests `/health`, and validates the analytics migration stream
+  against fresh PostgreSQL 16 (upgrade, schema verification,
+  downgrade/re-upgrade).
+- CI: the workflow was validated with `actionlint` against official GitHub
+  Actions conventions.
+
+### Security
+
+- The analytics-service dependency tree is AI-free (no-AI CI guard +
+  pip-audit); webhook signatures are verified before any state change;
+  collector traits are filtered for sensitive keys before persistence; the
+  ledger is append-only (no update/delete paths); tokens and credentials
+  never appear in responses or logs.
+
 ## [0.7.0] - 2026-08-11
 
 ### Added

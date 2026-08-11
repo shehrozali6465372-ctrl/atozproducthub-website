@@ -149,7 +149,15 @@ export interface AdminApiClient {
     getNotifications(): Promise<typeof NOTIFICATIONS>;
   };
   analytics: {
-    getTrafficSources(): Promise<typeof TRAFFIC_SOURCES>;
+    getOverview(from: string, to: string, accountId?: string): Promise<AnalyticsOverview>;
+    getTrafficSeries(from: string, to: string, source?: string, accountId?: string): Promise<AnalyticsTrafficPoint[]>;
+    getTrafficSources(from: string, to: string): Promise<AnalyticsTrafficSource[]>;
+    getTopPages(from: string, to: string, limit?: number): Promise<AnalyticsTopPage[]>;
+    getMetricSeries(from: string, to: string, metricKey?: string, accountId?: string): Promise<AnalyticsMetricPoint[]>;
+    getEvents(from: string, to: string, eventType?: string, accountId?: string, limit?: number): Promise<AnalyticsLedgerEvent[]>;
+    getKpis(from: string, to: string, kind?: string, limit?: number): Promise<AnalyticsKpiSnapshot[]>;
+    getPipeline(): Promise<AnalyticsPipelineStatus>;
+    runRollups(from: string, to: string): Promise<{ nicheId: string; rollupDate: string; trafficRows: number }[]>;
   };
   pinterest: {
     getAccounts(): Promise<typeof PIN_ACCOUNTS>;
@@ -320,6 +328,75 @@ export interface AdminRevenueDashboard {
   clickCount: number;
 }
 
+// ------------------------------------------------------------- analytics (M8)
+export interface AnalyticsOverview {
+  sessions: number;
+  pageviews: number;
+  uniqueVisitors: number;
+  bounceRate: number;
+  affiliateClicks: number;
+  conversions: number;
+  revenueAmount: number;
+  pinClicks: number;
+}
+
+export interface AnalyticsTrafficPoint {
+  label: string;
+  pinterest: number;
+  organic: number;
+  direct: number;
+  other: number;
+}
+
+export interface AnalyticsTrafficSource {
+  name: string;
+  value: number;
+  color: string;
+}
+
+export interface AnalyticsTopPage {
+  id: string;
+  path: string;
+  visits: number;
+  uniqueVisitors: number;
+  conversion: string;
+}
+
+export interface AnalyticsMetricPoint {
+  date: string;
+  metricKey: string;
+  value: number;
+  units: string;
+  pinterestAccountId: string | null;
+}
+
+export interface AnalyticsLedgerEvent {
+  id: string;
+  eventId: string;
+  eventType: string;
+  source: string;
+  sessionId: string | null;
+  pageUrl: string | null;
+  pinterestAccountId: string | null;
+  occurredAt: string;
+  receivedAt: string;
+}
+
+export interface AnalyticsKpiSnapshot {
+  id: string;
+  nicheId: string;
+  snapshotDate: string;
+  snapshotKind: string;
+  payloadJson: string;
+  createdAt: string;
+}
+
+export interface AnalyticsPipelineStatus {
+  backbone: string;
+  warehouse: string;
+  [key: string]: string | number | boolean;
+}
+
 // ------------------------------------------------------------------ mock mode
 const delay = <T>(value: T): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(value), 0));
@@ -450,6 +527,66 @@ const mockAffiliateClient = {
   revenueDashboard: () => delay(MOCK_AFFILIATE_DASHBOARD),
 };
 
+
+const mockAnalyticsClient = {
+  getOverview: (_from: string, _to: string) =>
+    delay({
+      sessions: 128430,
+      pageviews: 386400,
+      uniqueVisitors: 93410,
+      bounceRate: 0.412,
+      affiliateClicks: 34800,
+      conversions: 1152,
+      revenueAmount: 4128.5,
+      pinClicks: 51220,
+    }),
+  getTrafficSeries: (_from: string, _to: string) =>
+    delay(
+      TRAFFIC_SERIES.map((row) => ({
+        label: row.label,
+        pinterest: row.pinterest,
+        organic: row.organic,
+        direct: row.direct,
+        other: 0,
+      })),
+    ),
+  getTrafficSources: (_from: string, _to: string) => delay(TRAFFIC_SOURCES),
+  getTopPages: (_from: string, _to: string, limit = 20) =>
+    delay(
+      TOP_PAGES.slice(0, limit).map((page) => ({
+        id: page.id,
+        path: page.path,
+        visits: page.visits,
+        uniqueVisitors: Math.round(page.visits * 0.72),
+        conversion: page.conversion,
+      })),
+    ),
+  getMetricSeries: (from: string, to: string, _metricKey?: string) => {
+    const start = new Date(`${from}T00:00:00Z`);
+    const end = new Date(`${to}T00:00:00Z`);
+    const points: AnalyticsMetricPoint[] = [];
+    const clicks = [34800, 35100, 35750, 36200, 36900, 37400];
+    const conversions = [1152, 1180, 1210, 1235, 1280, 1310];
+    const revenue = [4128.5, 4230.0, 4310.75, 4420.2, 4550.9, 4680.4];
+    let index = 0;
+    for (let date = new Date(start); date <= end; date.setUTCDate(date.getUTCDate() + 7)) {
+      const iso = date.toISOString().slice(0, 10);
+      points.push({ date: iso, metricKey: "affiliate.clicks", value: clicks[index % clicks.length], units: "count", pinterestAccountId: null });
+      points.push({ date: iso, metricKey: "conversions", value: conversions[index % conversions.length], units: "count", pinterestAccountId: null });
+      points.push({ date: iso, metricKey: "revenue.amount", value: revenue[index % revenue.length], units: "usd", pinterestAccountId: null });
+      index += 1;
+    }
+    return delay(points);
+  },
+  getEvents: (_from: string, _to: string, _eventType?: string, _accountId?: string, _limit = 100) =>
+    delay([] as AnalyticsLedgerEvent[]),
+  getKpis: (_from: string, _to: string, _kind?: string, _limit = 100) =>
+    delay([] as AnalyticsKpiSnapshot[]),
+  getPipeline: () =>
+    delay({ backbone: "in-memory", warehouse: "in-memory", kafkaEnabled: false, clickhouseEnabled: false } as AnalyticsPipelineStatus),
+  runRollups: (_from: string, _to: string) => delay([]),
+};
+
 const mockAdminApiClient: AdminApiClient = {
   dashboard: {
     getKpis: () => delay(DASHBOARD_KPIS),
@@ -458,9 +595,7 @@ const mockAdminApiClient: AdminApiClient = {
     getTopPages: () => delay(TOP_PAGES),
     getNotifications: () => delay(NOTIFICATIONS),
   },
-  analytics: {
-    getTrafficSources: () => delay(TRAFFIC_SOURCES),
-  },
+  analytics: mockAnalyticsClient,
   pinterest: {
     getAccounts: () => delay(PIN_ACCOUNTS),
     getPinQueue: () => delay(PIN_QUEUE),
@@ -475,6 +610,7 @@ const mockAdminApiClient: AdminApiClient = {
 // ------------------------------------------------------------------ live mode
 const CONTENT_API_BASE = process.env.NEXT_PUBLIC_CONTENT_API_BASE_URL ?? "";
 const AFFILIATE_API_BASE = process.env.NEXT_PUBLIC_AFFILIATE_API_BASE_URL ?? "";
+const ANALYTICS_API_BASE = process.env.NEXT_PUBLIC_ANALYTICS_API_BASE_URL ?? "";
 
 interface LiveArticleDto {
   id: string;
@@ -592,6 +728,183 @@ function toArticlePayload(payload: ArticlePayload) {
     change_summary: payload.changeSummary,
   };
 }
+
+function analyticsFetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  return fetch(`${ANALYTICS_API_BASE}${path}`, {
+    ...init,
+    headers: { ...liveHeaders(), ...(init?.body ? { "Content-Type": "application/json" } : {}), ...init?.headers },
+  }).then(async (response) => {
+    if (!response.ok) {
+      throw new Error(`Admin analytics API request failed: ${response.status} ${response.statusText}`);
+    }
+    return (await response.json()) as T;
+  });
+}
+
+function analyticsDateRange(from: string, to: string, extra?: Record<string, string>) {
+  const query = new URLSearchParams({ from_date: from, to_date: to });
+  if (extra) {
+    for (const [key, value] of Object.entries(extra)) {
+      if (value) query.set(key, value);
+    }
+  }
+  return `?${query.toString()}`;
+}
+
+/** Bucket daily traffic rows into weekly points compatible with the chart. */
+function toTrafficSeries(points: LiveAnalyticsTrafficDto["points"]): AnalyticsTrafficPoint[] {
+  const buckets = new Map<string, AnalyticsTrafficPoint>();
+  for (const point of points) {
+    const date = new Date(`${point.date}T00:00:00Z`);
+    const day = (date.getUTCDay() + 6) % 7; // Monday = 0
+    const weekStart = new Date(date);
+    weekStart.setUTCDate(date.getUTCDate() - day);
+    const key = weekStart.toISOString().slice(0, 10);
+    const label = `${weekStart.getUTCMonth() + 1}/${weekStart.getUTCDate()}`;
+    let bucket = buckets.get(key);
+    if (!bucket) {
+      bucket = { label, pinterest: 0, organic: 0, direct: 0, other: 0 };
+      buckets.set(key, bucket);
+    }
+    if (point.source === "pinterest") bucket.pinterest += point.sessions;
+    else if (point.source === "google" || point.source === "email") bucket.organic += point.sessions;
+    else if (point.source === "direct") bucket.direct += point.sessions;
+    else bucket.other += point.sessions;
+  }
+  return [...buckets.values()];
+}
+
+const SOURCE_COLORS: Record<string, string> = {
+  Pinterest: "var(--color-danger-500)",
+  "Organic search": "var(--color-primary-500)",
+  Direct: "var(--color-success-500)",
+  Other: "var(--color-text-400)",
+};
+
+function toTrafficSources(points: LiveAnalyticsTrafficDto["points"]): AnalyticsTrafficSource[] {
+  const totals = new Map<string, number>();
+  let sum = 0;
+  for (const point of points) {
+    totals.set(point.source, (totals.get(point.source) ?? 0) + point.sessions);
+    sum += point.sessions;
+  }
+  if (sum === 0) return [];
+  const names: Record<string, string> = {
+    pinterest: "Pinterest",
+    google: "Organic search",
+    direct: "Direct",
+    email: "Email",
+    other: "Other",
+  };
+  return [...totals.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([source, sessions]) => {
+      const name = names[source] ?? "Other";
+      return { name, value: Math.round((sessions / sum) * 100), color: SOURCE_COLORS[name] ?? SOURCE_COLORS.Other };
+    });
+}
+
+const liveAnalyticsClient = {
+  getOverview: (from: string, to: string, accountId?: string) =>
+    analyticsFetchJson<LiveAnalyticsOverviewDto>(
+      `/api/v1/admin/overview${analyticsDateRange(from, to, accountId ? { account_id: accountId } : undefined)}`,
+    ).then((dto) => ({
+      sessions: dto.sessions,
+      pageviews: dto.pageviews,
+      uniqueVisitors: dto.unique_visitors,
+      bounceRate: dto.bounce_rate,
+      affiliateClicks: dto.affiliate_clicks,
+      conversions: dto.conversions,
+      revenueAmount: dto.revenue_amount,
+      pinClicks: dto.pin_clicks,
+    })),
+  getTrafficSeries: (from: string, to: string, source?: string, accountId?: string) =>
+    analyticsFetchJson<LiveAnalyticsTrafficDto>(
+      `/api/v1/admin/traffic${analyticsDateRange(from, to, {
+        ...(source ? { source } : {}),
+        ...(accountId ? { account_id: accountId } : {}),
+      })}`,
+    ).then((dto) => toTrafficSeries(dto.points)),
+  getTrafficSources: (from: string, to: string) =>
+    analyticsFetchJson<LiveAnalyticsTrafficDto>(
+      `/api/v1/admin/traffic${analyticsDateRange(from, to)}`,
+    ).then((dto) => toTrafficSources(dto.points)),
+  getTopPages: (from: string, to: string, limit = 20) =>
+    analyticsFetchJson<LiveAnalyticsTopPagesDto>(
+      `/api/v1/admin/top-pages${analyticsDateRange(from, to, { limit: String(limit) })}`,
+    ).then((dto) =>
+      dto.rows.map((row) => ({
+        id: row.page_url,
+        path: row.page_url,
+        visits: row.pageviews,
+        uniqueVisitors: row.unique_visitors,
+        conversion: row.unique_visitors > 0 ? `${(row.pageviews / row.unique_visitors).toFixed(2)}x` : "\u2014",
+      })),
+    ),
+  getMetricSeries: (from: string, to: string, metricKey?: string, accountId?: string) =>
+    analyticsFetchJson<LiveAnalyticsMetricDto>(
+      `/api/v1/admin/metrics${analyticsDateRange(from, to, {
+        ...(metricKey ? { metric_key: metricKey } : {}),
+        ...(accountId ? { account_id: accountId } : {}),
+      })}`,
+    ).then((dto) =>
+      dto.points.map((point) => ({
+        date: point.date,
+        metricKey: point.metric_key,
+        value: point.value,
+        units: point.units,
+        pinterestAccountId: point.pinterest_account_id,
+      })),
+    ),
+  getEvents: (from: string, to: string, eventType?: string, accountId?: string, limit = 100) => {
+    const query = new URLSearchParams({ start: `${from}T00:00:00Z`, end: `${to}T23:59:59Z` });
+    if (eventType) query.set("event_type", eventType);
+    if (accountId) query.set("account_id", accountId);
+    query.set("limit", String(limit));
+    return analyticsFetchJson<LiveAnalyticsLedgerEventDto[]>(`/api/v1/admin/events?${query.toString()}`).then(
+      (items) =>
+        items.map((item) => ({
+          id: item.id,
+          eventId: item.event_id,
+          eventType: item.event_type,
+          source: item.source,
+          sessionId: item.session_id,
+          pageUrl: item.page_url,
+          pinterestAccountId: item.pinterest_account_id,
+          occurredAt: item.occurred_at,
+          receivedAt: item.received_at,
+        })),
+    );
+  },
+  getKpis: (from: string, to: string, kind?: string, limit = 100) => {
+    const query = new URLSearchParams({ start: from, end: to });
+    if (kind) query.set("snapshot_kind", kind);
+    query.set("limit", String(limit));
+    return analyticsFetchJson<LiveAnalyticsKpiSnapshotDto[]>(`/api/v1/admin/kpis?${query.toString()}`).then(
+      (items) =>
+        items.map((item) => ({
+          id: item.id,
+          nicheId: item.niche_id,
+          snapshotDate: item.snapshot_date,
+          snapshotKind: item.snapshot_kind,
+          payloadJson: item.payload_json,
+          createdAt: item.created_at,
+        })),
+    );
+  },
+  getPipeline: () => analyticsFetchJson<AnalyticsPipelineStatus>("/api/v1/admin/pipeline"),
+  runRollups: (from: string, to: string) =>
+    analyticsFetchJson<{ niche_id: string; rollup_date: string; traffic_rows: number }[]>(
+      `/api/v1/admin/rollups${analyticsDateRange(from, to)}`,
+      { method: "POST" },
+    ).then((items) =>
+      items.map((item) => ({
+        nicheId: item.niche_id,
+        rollupDate: item.rollup_date,
+        trafficRows: item.traffic_rows,
+      })),
+    ),
+};
 
 const liveContentClient = {
   listNiches: () =>
@@ -795,6 +1108,68 @@ interface LiveSummaryDto {
   gross_cents: number;
   commission_cents: number;
   currency: string;
+}
+
+interface LiveAnalyticsOverviewDto {
+  sessions: number;
+  pageviews: number;
+  unique_visitors: number;
+  bounce_rate: number;
+  affiliate_clicks: number;
+  conversions: number;
+  revenue_amount: number;
+  pin_clicks: number;
+}
+
+interface LiveAnalyticsTrafficDto {
+  points: {
+    date: string;
+    source: string;
+    sessions: number;
+    pageviews: number;
+    unique_visitors: number;
+    bounce_rate: number;
+  }[];
+}
+
+interface LiveAnalyticsTopPagesDto {
+  rows: {
+    page_url: string;
+    pageviews: number;
+    unique_visitors: number;
+    last_seen: string | null;
+  }[];
+}
+
+interface LiveAnalyticsMetricDto {
+  points: {
+    date: string;
+    metric_key: string;
+    value: number;
+    units: string;
+    pinterest_account_id: string | null;
+  }[];
+}
+
+interface LiveAnalyticsLedgerEventDto {
+  id: string;
+  event_id: string;
+  event_type: string;
+  source: string;
+  session_id: string | null;
+  page_url: string | null;
+  pinterest_account_id: string | null;
+  occurred_at: string;
+  received_at: string;
+}
+
+interface LiveAnalyticsKpiSnapshotDto {
+  id: string;
+  niche_id: string;
+  snapshot_date: string;
+  snapshot_kind: string;
+  payload_json: string;
+  created_at: string;
 }
 
 interface LiveDashboardDto {
@@ -1015,7 +1390,7 @@ const liveAffiliateClient = {
 
 const liveAdminApiClient: AdminApiClient = {
   dashboard: mockAdminApiClient.dashboard,
-  analytics: mockAdminApiClient.analytics,
+  analytics: liveAnalyticsClient,
   pinterest: mockAdminApiClient.pinterest,
   automation: mockAdminApiClient.automation,
   content: liveContentClient,
@@ -1023,7 +1398,9 @@ const liveAdminApiClient: AdminApiClient = {
 };
 
 export function createAdminApiClient(): AdminApiClient {
-  return CONTENT_API_BASE || AFFILIATE_API_BASE ? liveAdminApiClient : mockAdminApiClient;
+  return CONTENT_API_BASE || AFFILIATE_API_BASE || ANALYTICS_API_BASE
+    ? liveAdminApiClient
+    : mockAdminApiClient;
 }
 
 export { PAGE_TITLES };

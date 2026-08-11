@@ -1,10 +1,7 @@
-"""Route registration for analytics-service.
+"""Analytics API routes: collector, admin reads, and event ingestion."""
 
-M3 ships an empty router: business endpoints arrive with their module
-(Phase 4+). Only infrastructure routes (/health, /ready, /metrics) are
-active today via the shared app factory.
-"""
+from atoz_analytics_service.routes.admin import router as admin_router
+from atoz_analytics_service.routes.public import router as public_router
+from atoz_analytics_service.routes.webhooks import router as webhook_router
 
-from fastapi import APIRouter
-
-router = APIRouter(tags=["analytics-service"])
+__all__ = ["admin_router", "public_router", "webhook_router"]

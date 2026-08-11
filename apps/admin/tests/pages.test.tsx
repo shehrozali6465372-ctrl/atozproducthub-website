@@ -10,14 +10,14 @@ import { expectNoAxeViolations } from "./helpers";
 
 describe("admin wireframe pages", () => {
   it("renders analytics with source donut", async () => {
-    const { container } = render(await AnalyticsPage());
+    const { container } = render(await AnalyticsPage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByRole("heading", { name: "Analytics" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /traffic share by source/i })).toBeInTheDocument();
     await expectNoAxeViolations(container);
   });
 
   it("renders revenue with network breakdown", async () => {
-    const { container } = render(await RevenuePage());
+    const { container } = render(await RevenuePage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByRole("heading", { name: "Revenue" })).toBeInTheDocument();
     expect(screen.getByRole("table", { name: "Revenue by network" })).toBeInTheDocument();
     await expectNoAxeViolations(container);

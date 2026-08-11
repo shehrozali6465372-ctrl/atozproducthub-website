@@ -248,6 +248,37 @@ never performs AI work: metadata intelligence belongs to the Universal AI
 Content Operating System and enters the website only through the AI OS
 Bridge (ADR-0007 §Contract compliance).
 
+Analytics & Reporting (M8 — `services/analytics-service`): the analytics
+module owns the analytics database (`analytics_db`) with its own Alembic
+migration stream (ADR-0008). Migrations run from the service directory:
+
+```bash
+cd services/analytics-service
+DATABASE_URL="postgresql+asyncpg://atoz:atoz@localhost:5432/atoz"   python -m alembic -c db/migrations/alembic.ini upgrade head
+```
+
+The service runs a first-party event collector (`/collect/v1/events` and
+`/collect/v1/events/batch`, slug-based niche tenancy, `event_id`
+idempotency, append-only ledger, sensitive-trait guard), a HMAC-verified
+domain-event webhook (`/webhooks/v1/analytics/events`), daily/weekly
+rollups into `traffic_daily`, `visitor_daily`, `daily_metrics`, and
+`kpi_snapshots`, and a read-only admin API (`/api/v1/admin/*` with JWT RBAC
+`analytics:read`/`analytics:write` + mandatory `X-Niche-Id`). The event
+pipeline is PostgreSQL → Kafka → ClickHouse; dev/CI use in-memory backbone
++ warehouse, and the compose stack includes Kafka/Zookeeper and ClickHouse
+so production wiring can be validated. The event webhook secret and the JWT
+secret default to dev-only values and must be provisioned via Vault in
+production. The admin dashboard uses mock fixtures unless the analytics API
+is configured:
+
+- `NEXT_PUBLIC_ANALYTICS_API_BASE_URL` — admin analytics API base
+  (apps/admin).
+
+The analytics business layer never performs AI work: it stores and
+aggregates business events only; AI-derived insights are read-only
+attributed data that can arrive only through the AI OS Bridge (ADR-0008
+§Contract compliance).
+
 Frontend (M2 — web + admin wireframes on the shared design system):
 
 ```bash
@@ -260,7 +291,7 @@ npm test          # vitest + axe a11y tests (all workspaces)
 npm run build     # next build (web + admin)
 ```
 
-The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), M3 (backend foundation), M4 (CMS business layer), M5 (affiliate engine), M6 (Pinterest business layer), and M7 (SEO & discovery layer) are complete; analytics, automation, and production follow.
+The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), M3 (backend foundation), M4 (CMS business layer), M5 (affiliate engine), M6 (Pinterest business layer), M7 (SEO & discovery layer), and M8 (analytics business layer) are complete; automation and production follow.
 
 ---
 

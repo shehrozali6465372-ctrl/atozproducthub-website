@@ -286,6 +286,18 @@ For every phase: Goal, Scope, Deliverables, Dependencies, Complexity, Risk, Succ
 
 ### Phase 10 — Analytics
 
+- **Status:** ✅ Complete (M8, v0.8.0 — ADR-0008). First-party collector
+  (single + batch, slug tenancy, `event_id` idempotency, append-only ledger,
+  sensitive-trait guard), HMAC-verified domain-event webhook, daily/weekly
+  rollups into `traffic_daily`/`visitor_daily`/`daily_metrics`/
+  `kpi_snapshots`, the PostgreSQL → Kafka → ClickHouse pipeline wiring
+  (in-memory backbone/warehouse in dev/CI; Kafka/Zookeeper + ClickHouse in
+  compose), read-only admin API with JWT RBAC + `X-Niche-Id`, and the
+  analytics/revenue admin dashboards connected to real read models are
+  implemented and tested. Follow-ups: production Kafka/ClickHouse
+  provisioning and partitions, client/edge event SDK, retention/privacy
+  jobs, sustained-load validation, and the `AIOS.Analytics.Insights` gate
+  (external AI OS).
 - **Goal:** The measurement pipeline: events → Kafka → ClickHouse → read models → dashboards.
 - **Scope:** `analytics-service` (event schema, collector, Kafka producers/consumers, ClickHouse writes, nightly rollups, `daily_metrics`, `traffic_daily`, `visitor_daily`, `kpi_snapshots`, `revenue_summaries`); client/edge event SDK; `AIOS.Analytics.Insights` display card; privacy (pseudonymization, retention).
 - **Deliverables:** events flow end-to-end (page views, pin clicks, affiliate clicks); warehouse live with partitions; nightly rollups; dashboard read models; insights card.
@@ -421,9 +433,11 @@ For every phase: Goal, Scope, Deliverables, Dependencies, Complexity, Risk, Succ
 **Definition of Done:**
 - [x] Sharded sitemaps + JSON-LD validated (v0.7.0).
 - [ ] GSC/Bing data ingested; `AIOS.SEO.Metadata` gate passed (external AI OS + live credentials pending).
-- [ ] Event pipeline sustains load; rollups reconcile with ledgers.
-- [ ] Analytics/revenue/SEO dashboards serve read models < 2 s.
-- [ ] `AIOS.Analytics.Insights` card renders read-only; no PII in warehouse.
+- [x] Event pipeline wired (PostgreSQL → Kafka → ClickHouse) and rollups reconcile with ledgers (v0.8.0).
+- [ ] Event pipeline sustains target load (production load-test follow-up).
+- [x] Analytics + revenue dashboards serve analytics read models (v0.8.0); SEO dashboards consume live sitemap/robots/search data (v0.7.0).
+- [ ] Sub-2s dashboard performance budget validated in production (follow-up).
+- [ ] `AIOS.Analytics.Insights` card renders read-only (external AI OS gate pending); no PII in warehouse (privacy guard + retention jobs follow-up).
 
 ### M7 — Operations
 **Phases:** 11, 12.

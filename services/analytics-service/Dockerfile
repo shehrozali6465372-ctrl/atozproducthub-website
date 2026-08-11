@@ -1,4 +1,4 @@
-# analytics-service — skeleton image (build context: repository root).
+# analytics-service — analytics + reporting image (build context: repository root).
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
