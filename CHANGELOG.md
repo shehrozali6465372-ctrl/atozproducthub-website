@@ -6,6 +6,69 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-11
+
+### Added
+
+- Implemented M7 SEO & Discovery Layer (findability milestone) — ADR-0007
+  freezes seo-service ownership of `seo_db` (own Alembic version table
+  alongside content/affiliate/pinterest streams), the local niche tenancy
+  mirror, niche-global URL slug uniqueness plus database-level
+  `UNIQUE (niche_id, path)`, event-driven Typesense search indexing
+  (lexical only — PostgreSQL stays the source of truth), and the AI OS
+  boundary where SEO metadata intelligence arrives only through the AI OS
+  Bridge.
+- `services/seo-service` v0.7.0:
+  - Domain layer: `seo_niches` (local mirror), `url_registry`,
+    `seo_metadata`, `sitemap_shards`, `seo_crawl_reports`, and
+    `seo_health_checks` — every business record carries `niche_id`;
+    composite unique constraints prevent duplicate paths/slugs per niche;
+    UUIDv7 keys.
+  - Repository layer: niche-scoped repositories and a `SeoUnitOfWork`
+    mirroring the content/affiliate/pinterest conventions.
+  - Service layer: `SeoService` facade with niche mirror CRUD, URL
+    registration + duplicate prevention (path- and slug-level), metadata
+    upsert/read-back, event-driven index/de-index, sitemap group rebuild +
+    shard rendering, robots rendering (Pinterestbot + image proxy never
+    blocked), crawl-report records, health checks, JSON-LD builders, and a
+    `SearchIndex` ABC with a Typesense client and an in-memory dev/test
+    implementation. Domain events: `seo:sitemap-rebuilt.v1`,
+    `search:indexed.v1`, `search:removed.v1`.
+  - API: read-only public API (`/api/v1/public/seo/{meta,robots,sitemaps}`
+    and `/api/v1/public/search` by niche slug), admin API (`/api/v1/admin/*`
+    with JWT RBAC `seo:read`/`seo:write` + mandatory `X-Niche-Id`), and the
+    HMAC-verified event webhook (`/webhooks/v1/seo/events`).
+- Search: niche-scoped article/category/tag/product search with
+  pagination, type filters, and explicit cross-niche isolation tests; no
+  vectors, embeddings, or AI ranking.
+- Sitemaps: per-group sharding and indexes for articles, categories, tags,
+  products, Pinterest landing pages, and affiliate collections; XML
+  validation in tests; only active public URLs; private URLs never exposed.
+- robots.txt: Googlebot/Bingbot/Pinterestbot allowed; admin, API, search,
+  internal, and private paths blocked; Pinterest image proxy compatible.
+- Google/Bing integration boundaries: GSC/Bing crawl-report storage and a
+  sitemap-submission boundary with server-side-only credential refs; mocked
+  in tests, no live credentials required.
+- Frontend: `apps/web` SEO namespace wired to the live SEO public API via
+  `NEXT_PUBLIC_SEO_API_BASE_URL` — real niche-scoped search results,
+  applied metadata + JSON-LD (Article/Product), canonical/robots handling,
+  and site-origin proxies for `/robots.txt`, `/sitemap.xml`, and
+  `/sitemaps/{group}-{n}.xml` with strict filename validation; admin pages
+  remain noindex.
+- Docker Compose: `seo-service` (port 8500) and `typesense` (port 8108)
+  with healthchecks; CI builds the image, smoke-tests `/health`, validates
+  the SEO migration stream against fresh PostgreSQL 16 (upgrade,
+  downgrade/re-upgrade, schema verification), and adds a Lighthouse
+  Core Web Vitals + SEO gate against the built web app.
+
+### Security
+
+- The seo-service dependency tree is AI-free (no-AI CI guard + pip-audit);
+  webhook signatures are verified before any state change; sitemap proxies
+  whitelist group names and numeric shards only.
+
+## [0.6.0] - 2026-08-10
+
 ## [0.6.0] - 2026-08-10
 
 ### Added

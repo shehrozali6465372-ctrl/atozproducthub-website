@@ -10,7 +10,7 @@ import {
   SearchInput,
   type FilterOption,
 } from "@atoz/design-system";
-import type { Article, Product } from "@/lib/api-client";
+import type { Article, Product, SearchHit } from "@/lib/api-client";
 
 type ResultType = "all" | "articles" | "products";
 
@@ -20,18 +20,26 @@ const FILTER_OPTIONS: FilterOption[] = [
   { value: "products", label: "Products" },
 ];
 
-/** Search wireframe: query + type filter over mock data (UI-only). */
+/**
+ * Search results panel. When the SEO service is configured the page passes
+ * real search hits (niche-scoped Typesense search via seo-service); without
+ * it the panel falls back to the M2 mock filtering path.
+ */
 export function SearchPanel({
   query,
   articles,
   products,
+  hits = [],
 }: {
   query: string;
   articles: Article[];
   products: Product[];
+  hits?: SearchHit[];
 }) {
   const [activeFilter, setActiveFilter] = useState<ResultType>("all");
   const [activeQuery, setActiveQuery] = useState(query);
+
+  const hasLiveHits = hits.length > 0;
 
   const filtered = useMemo(() => {
     const q = activeQuery.trim().toLowerCase();
@@ -46,8 +54,29 @@ export function SearchPanel({
   const showAll = activeFilter === "all";
   const visibleArticles = showAll || activeFilter === "articles" ? filtered.articles : [];
   const visibleProducts = showAll || activeFilter === "products" ? filtered.products : [];
+  const visibleHits = useMemo(
+    () =>
+      hasLiveHits
+        ? hits.filter((hit) => {
+            if (activeFilter === "all") return true;
+            return hit.type === (activeFilter === "articles" ? "article" : "product");
+          })
+        : [],
+    [activeFilter, hasLiveHits, hits],
+  );
   const hasQuery = activeQuery.trim().length > 0;
-  const hasResults = visibleArticles.length > 0 || visibleProducts.length > 0;
+  const hasResults =
+    visibleHits.length > 0 || visibleArticles.length > 0 || visibleProducts.length > 0;
+
+  const hitSections = useMemo(() => {
+    const groups = new Map<string, SearchHit[]>();
+    for (const hit of visibleHits) {
+      const current = groups.get(hit.type) ?? [];
+      current.push(hit);
+      groups.set(hit.type, current);
+    }
+    return [...groups.entries()];
+  }, [visibleHits]);
 
   return (
     <div className="space-y-6">
@@ -66,11 +95,37 @@ export function SearchPanel({
       ) : !hasResults ? (
         <EmptyState
           title={`No results for “${activeQuery}”`}
-          description="Real search arrives with Typesense in a later milestone. For now, try one of the sample topics above."
+          description="Try a different keyword or one of the sample topics above."
         />
       ) : (
         <div className="space-y-8">
-          {visibleArticles.length > 0 ? (
+          {hitSections.length > 0
+            ? hitSections.map(([type, sectionHits]) => (
+                <section key={type} aria-labelledby={`search-${type}`}>
+                  <h2
+                    id={`search-${type}`}
+                    className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-400"
+                  >
+                    {type === "article" ? "Articles" : `${type[0].toUpperCase()}${type.slice(1)}s`} (
+                    {sectionHits.length})
+                  </h2>
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {sectionHits.map((hit) => (
+                      <ContentCard
+                        key={`${hit.type}-${hit.id}`}
+                        title={hit.title}
+                        description={hit.excerpt}
+                        href={hit.url}
+                        badge={
+                          hit.type === "product" ? <Badge variant="accent">Affiliate</Badge> : undefined
+                        }
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))
+            : null}
+          {!hasLiveHits && visibleArticles.length > 0 ? (
             <section aria-labelledby="search-articles">
               <h2
                 id="search-articles"
@@ -91,7 +146,7 @@ export function SearchPanel({
               </div>
             </section>
           ) : null}
-          {visibleProducts.length > 0 ? (
+          {!hasLiveHits && visibleProducts.length > 0 ? (
             <section aria-labelledby="search-products">
               <h2
                 id="search-products"

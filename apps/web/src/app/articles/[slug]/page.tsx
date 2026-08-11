@@ -11,6 +11,8 @@ import {
   SectionHeading,
 } from "@atoz/design-system";
 import { createApiClient } from "@/lib/api-client";
+import { SeoJsonLd } from "@/components/seo-jsonld";
+import { mergeSeoMetadata } from "@/lib/seo-metadata";
 
 export const dynamic = "force-static";
 
@@ -20,11 +22,16 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const article = await createApiClient().content.getArticle(slug);
-  return {
+  const api = createApiClient();
+  const [article, seo] = await Promise.all([
+    api.content.getArticle(slug),
+    api.seo.getMetadata(`/articles/${slug}`),
+  ]);
+  return mergeSeoMetadata(seo, {
     title: article?.title ?? "Article",
     description: article?.excerpt,
-  };
+    alternates: { canonical: `/articles/${slug}` },
+  });
 }
 
 export default async function ArticlePage({ params }: PageProps) {
@@ -37,12 +44,14 @@ export default async function ArticlePage({ params }: PageProps) {
   ]);
 
   if (!article) notFound();
+  const seo = await api.seo.getMetadata(`/articles/${slug}`);
 
   const relatedArticles = related.filter((item) => item.slug !== article.slug).slice(0, 3);
   const affiliatePicks = products.slice(0, 2);
 
   return (
     <Container className="py-8 sm:py-12">
+      <SeoJsonLd seo={seo} />
       <Breadcrumbs
         className="mb-6"
         items={[

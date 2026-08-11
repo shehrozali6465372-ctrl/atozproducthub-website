@@ -12,6 +12,8 @@ import {
 } from "@atoz/design-system";
 import { createApiClient } from "@/lib/api-client";
 import { AffiliateBuyButton } from "@/components/affiliate-buy-button";
+import { SeoJsonLd } from "@/components/seo-jsonld";
+import { mergeSeoMetadata } from "@/lib/seo-metadata";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -19,8 +21,16 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const product = await createApiClient().affiliate.getProduct(slug);
-  return { title: product?.name ?? "Product", description: product?.summary };
+  const api = createApiClient();
+  const [product, seo] = await Promise.all([
+    api.affiliate.getProduct(slug),
+    api.seo.getMetadata(`/products/${slug}`),
+  ]);
+  return mergeSeoMetadata(seo, {
+    title: product?.name ?? "Product",
+    description: product?.summary,
+    alternates: { canonical: `/products/${slug}` },
+  });
 }
 
 export default async function ProductPage({ params }: PageProps) {
@@ -31,11 +41,13 @@ export default async function ProductPage({ params }: PageProps) {
     api.affiliate.listProducts(),
   ]);
   if (!product) notFound();
+  const seo = await api.seo.getMetadata(`/products/${slug}`);
 
   const relatedProducts = related.filter((item) => item.slug !== product.slug).slice(0, 3);
 
   return (
     <Container className="py-8 sm:py-12">
+      <SeoJsonLd seo={seo} />
       <Breadcrumbs
         className="mb-6"
         items={[

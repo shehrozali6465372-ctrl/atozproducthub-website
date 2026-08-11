@@ -1,4 +1,4 @@
-# seo-service — skeleton image (build context: repository root).
+# seo-service — SEO + discovery image (build context: repository root).
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \

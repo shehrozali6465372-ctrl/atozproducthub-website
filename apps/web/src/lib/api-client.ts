@@ -21,6 +21,8 @@ import {
  * affiliate service Public Read APIs when their base URLs are set. Without
  * the env vars the client keeps the M2 mock fixtures, so the site builds and
  * runs standalone. The pinterest namespace (M6) follows the same rule.
+ * The seo namespace (M7) talks to the seo-service Public Read API (search,
+ * metadata, robots, sitemaps) when ``NEXT_PUBLIC_SEO_API_BASE_URL`` is set.
  *
  * The website never talks to an AI model: all intelligence arrives through
  * the AI OS Bridge (Website Contract §4).
@@ -36,6 +38,27 @@ export type Pin = MockPin;
 export interface SearchResult {
   articles: Article[];
   products: Product[];
+  /** Unified hits from the SEO service search API (M7) when configured. */
+  hits: SearchHit[];
+}
+
+export interface SearchHit {
+  id: string;
+  type: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  url: string;
+  score: number;
+}
+
+export interface SeoMetadata {
+  title: string;
+  description: string;
+  canonicalUrl: string;
+  robots: string;
+  og: Record<string, unknown>;
+  structuredData: unknown[];
 }
 
 export interface ApiClient {
@@ -55,6 +78,12 @@ export interface ApiClient {
   pinterest: {
     listRecentPins(): Promise<Pin[]>;
     getLandingPage(slug: string): Promise<{ title: string; intro: string; articles: Article[]; pins: Pin[] } | null>;
+  };
+  seo: {
+    search(query: string, type?: string): Promise<SearchResult>;
+    getMetadata(path: string): Promise<SeoMetadata | null>;
+    getRobots(): Promise<string | null>;
+    getSitemap(filename: string): Promise<string | null>;
   };
 }
 
@@ -105,6 +134,7 @@ interface PublicPinDto {
 const CONTENT_API_BASE = process.env.NEXT_PUBLIC_CONTENT_API_BASE_URL ?? "";
 const AFFILIATE_API_BASE = process.env.NEXT_PUBLIC_AFFILIATE_API_BASE_URL ?? "";
 const PINTEREST_API_BASE = process.env.NEXT_PUBLIC_PINTEREST_API_BASE_URL ?? "";
+const SEO_API_BASE = process.env.NEXT_PUBLIC_SEO_API_BASE_URL ?? "";
 const NICHE_SLUG = process.env.NEXT_PUBLIC_NICHE_SLUG ?? "kitchen";
 
 function formatPublishedAt(value: string): string {
@@ -238,6 +268,81 @@ const livePinterestClient: ApiClient["pinterest"] = {
   },
 };
 
+// -------------------------------------------------------------------- seo
+interface SeoSearchHitDto {
+  id: string;
+  type: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  url: string;
+  score: number;
+}
+
+type SeoSearchPageDto = PageDto<SeoSearchHitDto>;
+
+interface SeoMetadataDto {
+  title: string;
+  description: string;
+  canonical_url: string;
+  robots: string;
+  og: Record<string, unknown>;
+  structured_data: unknown[];
+}
+
+const liveSeoClient: ApiClient["seo"] = {
+  async search(query: string, type?: string): Promise<SearchResult> {
+    if (!query.trim()) return { articles: [], products: [], hits: [] };
+    const params = new URLSearchParams({ niche: NICHE_SLUG, q: query });
+    if (type) params.set("type", type);
+    const data = await fetchJson<SeoSearchPageDto>(
+      `${SEO_API_BASE}/api/v1/public/search?${params.toString()}`,
+    );
+    return { articles: [], products: [], hits: data.items };
+  },
+  async getMetadata(path: string): Promise<SeoMetadata | null> {
+    try {
+      const data = await fetchJson<SeoMetadataDto>(
+        `${SEO_API_BASE}/api/v1/public/seo/meta?niche=${encodeURIComponent(NICHE_SLUG)}&path=${encodeURIComponent(path)}`,
+      );
+      return {
+        title: data.title,
+        description: data.description,
+        canonicalUrl: data.canonical_url,
+        robots: data.robots,
+        og: data.og,
+        structuredData: data.structured_data,
+      };
+    } catch {
+      return null;
+    }
+  },
+  async getRobots(): Promise<string | null> {
+    try {
+      const response = await fetch(
+        `${SEO_API_BASE}/api/v1/public/seo/robots?niche=${encodeURIComponent(NICHE_SLUG)}`,
+        { headers: { Accept: "text/plain" }, cache: "no-store" },
+      );
+      if (!response.ok) return null;
+      return await response.text();
+    } catch {
+      return null;
+    }
+  },
+  async getSitemap(filename: string): Promise<string | null> {
+    try {
+      const response = await fetch(
+        `${SEO_API_BASE}/api/v1/public/seo/sitemaps/${encodeURIComponent(filename)}?niche=${encodeURIComponent(NICHE_SLUG)}`,
+        { headers: { Accept: "application/xml" }, cache: "no-store" },
+      );
+      if (!response.ok) return null;
+      return await response.text();
+    } catch {
+      return null;
+    }
+  },
+};
+
 // -------------------------------------------------------------- mock client
 const delay = <T>(value: T): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(value), 0));
@@ -256,6 +361,7 @@ const mockApiClient: ApiClient = {
         products: MOCK_PRODUCTS.filter((p) =>
           p.name.toLowerCase().includes(query.toLowerCase()),
         ),
+        hits: [],
       }),
   },
   affiliate: {
@@ -267,6 +373,12 @@ const mockApiClient: ApiClient = {
   pinterest: {
     listRecentPins: () => delay(MOCK_PINS),
     getLandingPage: (slug) => delay(MOCK_LANDING_PAGES[slug] ?? null),
+  },
+  seo: {
+    search: (query) => mockApiClient.content.search(query),
+    getMetadata: () => delay(null),
+    getRobots: () => delay(null),
+    getSitemap: () => delay(null),
   },
 };
 
@@ -320,7 +432,7 @@ const liveContentClient = {
     );
     // Product search stays mock-backed until the affiliate milestone (M5+).
     const products = MOCK_PRODUCTS.filter((p) => p.name.toLowerCase().includes(normalized));
-    return { articles, products };
+    return { articles, products, hits: [] };
   },
 };
 
@@ -331,5 +443,6 @@ export function createApiClient(): ApiClient {
     content: CONTENT_API_BASE ? liveContentClient : mockApiClient.content,
     affiliate: AFFILIATE_API_BASE ? liveAffiliateClient : mockApiClient.affiliate,
     pinterest: PINTEREST_API_BASE ? livePinterestClient : mockApiClient.pinterest,
+    seo: SEO_API_BASE ? liveSeoClient : mockApiClient.seo,
   };
 }

@@ -1,3 +1,3 @@
-"""SEO metadata application, sitemaps, and structured data — skeleton only."""
+"""SEO metadata, sitemaps, robots, JSON-LD, and niche-scoped search — M7."""
 
-__version__ = "0.3.0"
+__version__ = "0.7.0"

@@ -215,6 +215,39 @@ targeting intelligence belong to the Universal AI Content Operating System
 and enter the website only through the AI OS Bridge (ADR-0006
 §Contract compliance).
 
+SEO & Discovery (M7 — `services/seo-service`): the SEO module owns the SEO
+database (`seo_db`) with its own Alembic migration stream (ADR-0007).
+Migrations run from the service directory:
+
+```bash
+cd services/seo-service
+DATABASE_URL="postgresql+asyncpg://atoz:atoz@localhost:5432/atoz" \
+  python -m alembic -c db/migrations/alembic.ini upgrade head
+```
+
+The service provides applied SEO metadata and canonical URL policy
+(duplicate-URL prevention), robots rules that never block Pinterestbot or
+its image proxy, JSON-LD + Open Graph output, sharded sitemaps at million-
+URL scale, Google/Bing crawl-report boundaries (server-side credentials
+only), and strictly niche-scoped search indexing backed by Typesense
+(lexical only; PostgreSQL remains the source of truth). Public reads are
+niche-scoped by slug; the admin API uses JWT RBAC
+`seo:read`/`seo:write` + mandatory `X-Niche-Id`; domain events drive
+indexing/de-indexing (`content:published/updated/unpublished.v1`,
+`product:ingested/removed.v1`). The JWT secret, the event webhook secret,
+and the Typesense API key default to dev-only values and must be provisioned
+via Vault in production. Frontends use mock fixtures unless the SEO API is
+configured:
+
+- `NEXT_PUBLIC_SEO_API_BASE_URL` — public SEO/search API base (web).
+- `NEXT_PUBLIC_NICHE_SLUG` — niche slug for the public site (default `kitchen`).
+
+The site proxies robots and sitemaps at `/robots.txt`, `/sitemap.xml`, and
+`/sitemaps/{group}-{n}.xml` from the SEO service. The SEO business layer
+never performs AI work: metadata intelligence belongs to the Universal AI
+Content Operating System and enters the website only through the AI OS
+Bridge (ADR-0007 §Contract compliance).
+
 Frontend (M2 — web + admin wireframes on the shared design system):
 
 ```bash
@@ -227,7 +260,7 @@ npm test          # vitest + axe a11y tests (all workspaces)
 npm run build     # next build (web + admin)
 ```
 
-The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), M3 (backend foundation), M4 (CMS business layer), M5 (affiliate engine), and M6 (Pinterest business layer) are complete; M7+ (SEO, analytics, automation, production) follow.
+The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), M3 (backend foundation), M4 (CMS business layer), M5 (affiliate engine), M6 (Pinterest business layer), and M7 (SEO & discovery layer) are complete; analytics, automation, and production follow.
 
 ---
 

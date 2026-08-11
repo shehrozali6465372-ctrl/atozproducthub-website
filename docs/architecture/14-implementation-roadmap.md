@@ -257,6 +257,15 @@ For every phase: Goal, Scope, Deliverables, Dependencies, Complexity, Risk, Succ
 
 ### Phase 9 — SEO Layer
 
+- **Status:** ✅ Complete (M7, v0.7.0 — ADR-0007). Applied SEO metadata and
+  canonical URL policy (duplicate-URL prevention), robots rules that never
+  block Pinterestbot or its image proxy, JSON-LD/Open Graph output, sharded
+  sitemaps + indexes, GSC/Bing crawl-report boundaries, niche-scoped
+  Typesense search with event-driven indexing, site-origin robots/sitemap
+  proxies, and a Lighthouse Core Web Vitals + SEO CI gate are implemented
+  and tested. Follow-ups: live GSC/Bing credential provisioning, the
+  `AIOS.SEO.Metadata` gate (external AI OS), hreflang, and crawl-API
+  expansions.
 - **Goal:** SEO production: metadata application, sharded sitemaps, structured data, crawl health.
 - **Scope:** `seo-service` (`url_registry`, `seo_metadata`, `sitemap_shards`, `seo_crawl_reports`, `seo_health_checks`); sitemap sharding jobs; JSON-LD rendering on article/product/collection pages; GSC + Bing ingestion; `AIOS.SEO.Metadata` integration; per-niche robots; Lighthouse CI budgets active.
 - **Deliverables:** sharded sitemaps served from CDN; JSON-LD validated; URL policy + redirects; GSC data in dashboards; SEO health reports.
@@ -410,7 +419,8 @@ For every phase: Goal, Scope, Deliverables, Dependencies, Complexity, Risk, Succ
 **Phases:** 9, 10.
 **Goal:** The site is findable and measurable.
 **Definition of Done:**
-- [ ] Sharded sitemaps + JSON-LD validated; GSC/Bing data ingested; `AIOS.SEO.Metadata` gate passed.
+- [x] Sharded sitemaps + JSON-LD validated (v0.7.0).
+- [ ] GSC/Bing data ingested; `AIOS.SEO.Metadata` gate passed (external AI OS + live credentials pending).
 - [ ] Event pipeline sustains load; rollups reconcile with ledgers.
 - [ ] Analytics/revenue/SEO dashboards serve read models < 2 s.
 - [ ] `AIOS.Analytics.Insights` card renders read-only; no PII in warehouse.

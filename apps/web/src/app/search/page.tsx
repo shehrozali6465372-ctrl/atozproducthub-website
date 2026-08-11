@@ -16,9 +16,13 @@ export default async function SearchPage({
 }) {
   const { q } = await searchParams;
   const api = createApiClient();
-  const [articles, products] = await Promise.all([
+  const query = q?.trim() ?? "";
+  // Real niche-scoped search comes from seo-service (M7); without
+  // NEXT_PUBLIC_SEO_API_BASE_URL the seo client falls back to mock filtering.
+  const [articles, products, results] = await Promise.all([
     api.content.listArticles(),
     api.affiliate.listProducts(),
+    api.seo.search(query),
   ]);
 
   return (
@@ -31,7 +35,7 @@ export default async function SearchPage({
         title="Search"
         description="Find articles and products across AtozProductHub."
       />
-      <SearchPanel query={q?.trim() ?? ""} articles={articles} products={products} />
+      <SearchPanel query={query} articles={articles} products={products} hits={results.hits} />
     </Container>
   );
 }

@@ -82,6 +82,7 @@ jobs:
           pip install -e "services/content-service[dev]"
           pip install -e "services/affiliate-service[dev]"
           pip install -e "services/pinterest-service[dev]"
+          pip install -e "services/seo-service[dev]"
       - name: Verify single migration head
         working-directory: services/content-service
         run: python -m alembic -c db/migrations/alembic.ini heads | grep -c "(head)" | grep -q 1
@@ -130,6 +131,26 @@ jobs:
           psql -h localhost -U atoz -d atoz -c "\dt" | grep -E "pinterest_niches|pinterest_accounts|pinterest_tokens|pinterest_boards|board_sections|pinterest_pins|pin_queue_items|pin_publish_attempts|pinterest_analytics"
       - name: Downgrade + re-upgrade (pinterest repeatable migrations)
         working-directory: services/pinterest-service
+        env:
+          DATABASE_URL: postgresql+asyncpg://atoz:atoz@localhost:5432/atoz
+        run: |
+          python -m alembic -c db/migrations/alembic.ini downgrade base
+          python -m alembic -c db/migrations/alembic.ini upgrade head
+      - name: Verify single migration head (seo)
+        working-directory: services/seo-service
+        run: python -m alembic -c db/migrations/alembic.ini heads | grep -c "(head)" | grep -q 1
+      - name: Migrate fresh PostgreSQL (seo upgrade head)
+        working-directory: services/seo-service
+        env:
+          DATABASE_URL: postgresql+asyncpg://atoz:atoz@localhost:5432/atoz
+        run: python -m alembic -c db/migrations/alembic.ini upgrade head
+      - name: Verify seo schema on PostgreSQL
+        env:
+          PGPASSWORD: atoz
+        run: |
+          psql -h localhost -U atoz -d atoz -c "\dt" | grep -E "seo_niches|url_registry|seo_metadata|sitemap_shards|seo_crawl_reports|seo_health_checks"
+      - name: Downgrade + re-upgrade (seo repeatable migrations)
+        working-directory: services/seo-service
         env:
           DATABASE_URL: postgresql+asyncpg://atoz:atoz@localhost:5432/atoz
         run: |
@@ -233,9 +254,66 @@ jobs:
           done
           echo "pinterest-service health check failed" >&2
           exit 1
+      - name: Health check (seo-service)
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8500/health; then
+              echo "seo-service health OK"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "seo-service health check failed" >&2
+          exit 1
       - name: Compose down
         if: always()
         run: docker compose -f infra/docker/compose.yml down -v
+
+  lighthouse:
+    name: Lighthouse (Core Web Vitals + SEO gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm ci
+      - name: Build web app
+        working-directory: apps/web
+        run: npm run build
+      - name: Install Lighthouse Chrome
+        run: npx --yes @puppeteer/browsers install chrome@stable --path /tmp/chrome
+      - name: Run Lighthouse audit
+        env:
+          CHROME_PATH: /tmp/chrome/chrome-linux64/chrome
+        run: |
+          cd apps/web
+          npx next start -p 3000 > /tmp/next.log 2>&1 &
+          SERVER_PID=$!
+          trap "kill $SERVER_PID 2>/dev/null || true" EXIT
+          for i in $(seq 1 60); do
+            curl -fsS http://localhost:3000 > /dev/null 2>&1 && break
+            sleep 2
+          done
+          cd ../..
+          npx --yes lighthouse http://localhost:3000 --quiet --only-categories=performance,seo \
+            --chrome-flags="--headless --no-sandbox --disable-gpu" \
+            --output=json --output-path=/tmp/lighthouse.json --output-dir=/tmp
+          node - <<'EOF'
+          const report = require("/tmp/lighthouse.json");
+          const scores = report.categories;
+          console.log(
+            "performance:", scores.performance.score,
+            "| seo:", scores.seo.score,
+          );
+          if ((scores.seo.score ?? 0) < 0.8) {
+            throw new Error("SEO score below the 0.8 gate");
+          }
+          if ((scores.performance.score ?? 0) < 0.4) {
+            throw new Error("Performance score below the 0.4 gate");
+          }
+          EOF
 
   security:
     name: Security (secrets)
