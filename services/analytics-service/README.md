@@ -15,7 +15,7 @@ rollups, and niche-scoped report read models — M8 Analytics business layer
 - **Pipeline:** PostgreSQL operational ledger → Kafka event backbone →
   ClickHouse analytical warehouse. Dev/CI default to in-memory backbone +
   warehouse; `KAFKA_ENABLED=true` / `WAREHOUSE_ENABLED=true` enable the real
-  transports (compose includes Kafka/Zookeeper and ClickHouse).
+  transports (compose includes single-node KRaft Kafka and ClickHouse).
 - **Endpoints:**
   - Public collector: `/collect/v1/events` and `/collect/v1/events/batch`
     — slug-based niche tenancy, `event_id` idempotency, sensitive-trait

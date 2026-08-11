@@ -265,7 +265,7 @@ rollups into `traffic_daily`, `visitor_daily`, `daily_metrics`, and
 `kpi_snapshots`, and a read-only admin API (`/api/v1/admin/*` with JWT RBAC
 `analytics:read`/`analytics:write` + mandatory `X-Niche-Id`). The event
 pipeline is PostgreSQL → Kafka → ClickHouse; dev/CI use in-memory backbone
-+ warehouse, and the compose stack includes Kafka/Zookeeper and ClickHouse
++ warehouse, and the compose stack includes single-node KRaft Kafka and ClickHouse
 so production wiring can be validated. The event webhook secret and the JWT
 secret default to dev-only values and must be provisioned via Vault in
 production. The admin dashboard uses mock fixtures unless the analytics API

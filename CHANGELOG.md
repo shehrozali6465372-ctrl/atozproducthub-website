@@ -58,8 +58,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   enforcement, admin API RBAC, cross-niche and cross-account isolation
   (10 simulated accounts), migration upgrade/downgrade/re-upgrade, and
   HTTP-level tenancy.
-- Docker Compose: `analytics-service` (port 8600) plus Kafka (with
-  Zookeeper) and ClickHouse with healthchecks; CI builds the image,
+- Docker Compose: `analytics-service` (port 8600) plus a single-node
+  KRaft Kafka and ClickHouse with healthchecks; CI builds the image,
   smoke-tests `/health`, and validates the analytics migration stream
   against fresh PostgreSQL 16 (upgrade, schema verification,
   downgrade/re-upgrade).

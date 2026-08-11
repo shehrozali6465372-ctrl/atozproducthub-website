@@ -117,8 +117,8 @@ pipeline wiring are unspecified, so this ADR freezes those decisions.
   chat, no generation.
 - Kafka/ClickHouse provisioning (topics, databases, partitions) and real
   production credentials remain operator follow-ups; dev/CI default to the
-  in-memory pipeline, and the compose stack includes Kafka (with
-  Zookeeper) and ClickHouse so the production wiring can be validated.
+  in-memory pipeline, and the compose stack includes a single-node
+  KRaft Kafka and ClickHouse so the production wiring can be validated.
 
 ## Contract compliance
 
