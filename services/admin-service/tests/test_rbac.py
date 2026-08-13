@@ -13,6 +13,7 @@ from .fixtures import (
     api_client,
     build_app,
     headers,
+    make_settings,
     scenario,
 )
 
@@ -220,3 +221,26 @@ class _SessionManagerForTest:
 
     async def revoke(self, session_id: str) -> None:
         return None
+
+
+def test_startup_seed_is_resilient_when_schema_is_missing() -> None:
+    """Compose starts the control plane before migrations run (ADR-0009 §4).
+
+    Seeding reference data must not crash startup when the admin tables do
+    not exist yet; the readiness probe reports DB health independently.
+    """
+
+    async def run() -> None:
+        from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+        from sqlalchemy.pool import StaticPool
+
+        from atoz_admin_service.main import create_app
+
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:", poolclass=StaticPool)
+        session_factory = async_sessionmaker(engine, expire_on_commit=False)
+        app = create_app(settings=make_settings(), session_factory=session_factory)
+        async with app.router.lifespan_context(app):
+            pass  # startup must not raise when the schema is absent
+        await engine.dispose()
+
+    scenario(run)

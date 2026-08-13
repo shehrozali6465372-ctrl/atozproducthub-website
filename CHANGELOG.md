@@ -65,6 +65,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Alembic migration streams remain isolated per service via dedicated
   version tables (extended to the admin stream).
+- Anchored the `.gitignore` `logs/` rule to the repository root so the
+  admin `ops/logs` frontend route is tracked instead of silently ignored
+  (the unanchored pattern also skipped the route file, breaking the CI
+  typecheck step).
+- Made the startup RBAC seed resilient when the admin schema has not been
+  migrated yet (compose dev boot): a missing-table error logs a warning and
+  the service stays healthy; readiness probes still report DB health
+  independently.
 
 ## [0.8.0] - 2026-08-11
 

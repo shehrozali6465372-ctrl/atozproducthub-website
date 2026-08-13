@@ -1,5 +1,6 @@
 """Application factory for admin-service (M9 admin & operations layer)."""
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -16,6 +17,8 @@ from atoz_backend_core.auth.sessions import InMemorySessionManager, RedisSession
 from atoz_backend_core.db.postgres import create_engine, create_session_factory
 from atoz_backend_core.events.bus import InMemoryEventBus
 from atoz_backend_core.events.publisher import EventPublisher
+
+logger = logging.getLogger("atoz.admin.main")
 
 
 def build_session_factory(database_url: str) -> async_sessionmaker[AsyncSession]:
@@ -59,7 +62,13 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         if app.state.admin_service is not None:
-            await app.state.admin_service.seed_reference_data()
+            try:
+                await app.state.admin_service.seed_reference_data()
+            except Exception as exc:  # noqa: BLE001
+                # Compose/dev starts the control plane before migrations run;
+                # reference data is seeded idempotently once the schema exists
+                # (readiness probes still report DB health independently).
+                logger.warning("seed_reference_data skipped: %s", exc)
         yield
 
     app = create_service_app(
