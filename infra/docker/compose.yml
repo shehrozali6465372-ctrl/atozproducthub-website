@@ -206,6 +206,40 @@ services:
       retries: 5
       start_period: 5s
 
+  automation-service:
+    build:
+      context: ../..
+      dockerfile: services/automation-service/Dockerfile
+    ports:
+      - "8800:8000"
+    environment:
+      APP_ENV: dev
+      APP_LOG_LEVEL: INFO
+      # Durable automation data lives in the shared Postgres (automation_db
+      # tables are created by the automation-service migrations); the Celery
+      # broker/backend use Redis (scaffold only — no business tasks yet).
+      DATABASE_URL: postgresql+asyncpg://atoz:atoz@postgres:5432/atoz
+      JWT_SECRET: dev-only-automation-jwt-secret-change-in-production
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_BACKEND_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
   admin-service:
     build:
       context: ../..

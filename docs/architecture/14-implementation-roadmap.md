@@ -349,6 +349,19 @@ For every phase: Goal, Scope, Deliverables, Dependencies, Complexity, Risk, Succ
 
 ### Phase 12 — Automation
 
+- **Status:** 🟡 In progress — M10 foundation complete (v0.10.0,
+  ADR-0010): durable rule/run state machines, Platform `scheduled_jobs` /
+  `job_runs` / `queue_items` integration (tables remain admin-owned per
+  ADR-0009, mapped by identical table names — no competing migrations),
+  idempotent rule triggers and AI OS job correlation records
+  (`aios_job_records`, `UNIQUE (job_id, contract)`, metadata only),
+  exponential-backoff retry policy, 10-niche isolation, Celery worker/Beat
+  scaffold (no business tasks), migration stream validated on fresh
+  PostgreSQL, and admin API under `/api/v1/admin` (JWT RBAC +
+  `X-Niche-Id`). Follow-ups (Step 2): business executors (Pinterest
+  publishing, sitemap rebuild, affiliate reconciliation, AI OS job
+  dispatch), real Celery worker execution + production single-scheduler
+  locking, notification delivery, and 30-day scheduler reliability.
 - **Goal:** Business automation: scheduler, queues, notifications, and governance of automated work.
 - **Scope:** `automation_rules`/`automation_runs`; `scheduled_jobs`/`job_runs`; `queue_items` ledger; Celery workers + Beat; notification delivery (in-app + email); pin-queue automation (with Phase 8); report generation; sitemap rebuild jobs; reconciliation jobs; automation dashboard controls; `aios_job_records` lifecycle.
 - **Deliverables:** scheduled jobs execute reliably (pins, sitemaps, reports, reconciliation); automation rules manageable from the dashboard; notifications delivered; failures alert + retry.
@@ -455,8 +468,10 @@ For every phase: Goal, Scope, Deliverables, Dependencies, Complexity, Risk, Succ
 **Goal:** Operators fully control the business through the admin suite and automation.
 **Definition of Done:**
 - [x] All admin pages live; role matrix enforced; audit searchable (v0.9.0).
-- [ ] Scheduled jobs reliable for 30 days; failures alert + retry (Phase 12 follow-up).
-- [ ] Notifications delivered; automation rules governable and audited (Phase 12 follow-up).
+- [x] Automation rule/run/queue state machines + idempotent triggers governable and
+      audited with 10-niche isolation (v0.10.0 — M10 automation foundation).
+- [ ] Scheduled jobs reliable for 30 days; failures alert + retry (Phase 12 Step 2 follow-up).
+- [ ] Notifications delivered; business executors wired (Phase 12 Step 2 follow-up).
 
 ### M8 — Production
 **Phases:** 13.

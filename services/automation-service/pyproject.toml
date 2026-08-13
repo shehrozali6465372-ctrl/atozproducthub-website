@@ -4,17 +4,23 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "automation-service"
-version = "0.3.0"
-description = "Business automation workflows (scheduling, run history) — skeleton only (ADR-0002)."
+version = "0.10.0"
+description = "Durable automation engine foundation — rules, scheduler, queue ledger, AI OS job correlation (M10)."
 requires-python = ">=3.11"
 dependencies = [
     "atoz-backend-core==0.4.0",
     "uvicorn[standard]>=0.30,<1",
+    "sqlalchemy[asyncio]>=2.0,<3",
+    "asyncpg>=0.29,<1",
+    "alembic>=1.13,<2",
+    "celery>=5.4,<6",
+    "redis>=5.0,<6",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=9.0.3,<10",
+    "aiosqlite>=0.20,<1",
     "httpx>=0.27,<1",
     "ruff>=0.6,<1",
     "mypy>=1.10,<2",

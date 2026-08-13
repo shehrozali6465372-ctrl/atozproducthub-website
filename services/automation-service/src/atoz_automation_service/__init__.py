@@ -1,3 +1,3 @@
-"""Business automation workflows (scheduling, run history) — skeleton only (ADR-0002)."""
+"""Durable automation engine foundation — M10 (v0.10.0)."""
 
-__version__ = "0.3.0"
+__version__ = "0.10.0"

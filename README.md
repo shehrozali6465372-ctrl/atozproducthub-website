@@ -296,6 +296,22 @@ otherwise. ADR-0009 freezes the service ownership and boundaries; the
 control plane records and reports business operations only — no AI
 functionality (Website Contract §4).
 
+Automation (M10 — `services/automation-service`): the automation module owns
+the automation database (`automation_db`) with its own Alembic stream
+(`alembic_version_automation`): `automation_niches` (local mirror),
+`automation_rules`, `automation_runs` (append-only history, idempotent
+triggers), and `aios_job_records` (Bridge correlation metadata only —
+`UNIQUE (job_id, contract)` dedupe). The Platform tables `scheduled_jobs`,
+`job_runs`, and `queue_items` remain admin-owned (ADR-0009) and are
+integrated by identical table mapping (ADR-0010). The foundation ships
+rule/run state machines, the durable queue ledger with exponential-backoff
+retries, the job execution lifecycle, Celery worker/Beat scaffolding
+(no business tasks yet), and a JWT RBAC admin API under `/api/v1/admin`
+with strict `X-Niche-Id` tenancy. Step 2 wires the business executors
+(Pinterest publishing, sitemap rebuild, affiliate reconciliation, AI OS job
+dispatch) — the website remains a business platform; all intelligence stays
+in the AI OS (Website Contract §4).
+
 Frontend (M2 — web + admin wireframes on the shared design system):
 
 ```bash
@@ -308,7 +324,7 @@ npm test          # vitest + axe a11y tests (all workspaces)
 npm run build     # next build (web + admin)
 ```
 
-The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), M3 (backend foundation), M4 (CMS business layer), M5 (affiliate engine), M6 (Pinterest business layer), M7 (SEO & discovery layer), M8 (analytics business layer), and M9 (admin & operations layer) are complete; automation (M10) and production (M11) follow.
+The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), M3 (backend foundation), M4 (CMS business layer), M5 (affiliate engine), M6 (Pinterest business layer), M7 (SEO & discovery layer), M8 (analytics business layer), M9 (admin & operations layer), and M10 (automation foundation) are complete; production (M11) follows.
 
 ---
 

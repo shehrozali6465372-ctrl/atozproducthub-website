@@ -85,6 +85,7 @@ jobs:
           pip install -e "services/seo-service[dev]"
           pip install -e "services/analytics-service[dev]"
           pip install -e "services/admin-service[dev]"
+          pip install -e "services/automation-service[dev]"
       - name: Verify single migration head
         working-directory: services/content-service
         run: python -m alembic -c db/migrations/alembic.ini heads | grep -c "(head)" | grep -q 1
@@ -201,6 +202,27 @@ jobs:
           psql -h localhost -U atoz -d atoz -c "\dt" | grep -E "admin_niches|admin_users|roles|permissions|role_permissions|user_roles|api_keys|audit_logs|notifications|queue_items|webhook_logs|operation_logs|scheduled_jobs|job_runs"
       - name: Downgrade + re-upgrade (admin repeatable migrations)
         working-directory: services/admin-service
+        env:
+          DATABASE_URL: postgresql+asyncpg://atoz:atoz@localhost:5432/atoz
+        run: |
+          python -m alembic -c db/migrations/alembic.ini downgrade base
+          python -m alembic -c db/migrations/alembic.ini upgrade head
+
+      - name: Verify single migration head (automation)
+        working-directory: services/automation-service
+        run: python -m alembic -c db/migrations/alembic.ini heads | grep -c "(head)" | grep -q 1
+      - name: Migrate fresh PostgreSQL (automation upgrade head)
+        working-directory: services/automation-service
+        env:
+          DATABASE_URL: postgresql+asyncpg://atoz:atoz@localhost:5432/atoz
+        run: python -m alembic -c db/migrations/alembic.ini upgrade head
+      - name: Verify automation schema on PostgreSQL
+        env:
+          PGPASSWORD: atoz
+        run: |
+          psql -h localhost -U atoz -d atoz -c "\dt" | grep -E "automation_niches|automation_rules|automation_runs|aios_job_records"
+      - name: Downgrade + re-upgrade (automation repeatable migrations)
+        working-directory: services/automation-service
         env:
           DATABASE_URL: postgresql+asyncpg://atoz:atoz@localhost:5432/atoz
         run: |
@@ -330,6 +352,17 @@ jobs:
             sleep 2
           done
           echo "admin-service health check failed" >&2
+          exit 1
+      - name: Health check (automation-service)
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8800/health; then
+              echo "automation-service health OK"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "automation-service health check failed" >&2
           exit 1
       - name: Compose down
         if: always()

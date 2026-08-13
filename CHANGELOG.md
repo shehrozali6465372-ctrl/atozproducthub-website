@@ -6,6 +6,69 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-13
+
+### Added
+
+- Implemented M10 Automation Foundation (Phase 12 Step 1) —
+  ADR-0010 freezes automation-service ownership of `automation_db`
+  (`automation_niches` local tenancy mirror, `automation_rules`,
+  `automation_runs`, `aios_job_records`) and documents the Platform-table
+  boundary: `scheduled_jobs`, `job_runs`, and `queue_items` stay
+  admin-owned (ADR-0009) and are integrated by identical table mapping,
+  never re-created by a competing migration stream.
+- `services/automation-service` v0.10.0:
+  - Domain layer: rule lifecycle (`disabled → enabled`), append-only run
+    history with idempotent triggers (`Idempotency-Key` header + nullable
+    `automation_runs.idempotency_key` extension column, ADR-0010), job
+    execution state machine (`pending → running → success/failed/cancelled`
+    on the Platform tables), durable queue ledger
+    (`queued → claimed → done/failed`) with exponential-backoff + jitter
+    retry metadata (attempts, max_attempts, next retry time), and
+    `aios_job_records` Bridge correlation records (`UNIQUE (job_id,
+    contract)` dedupe; metadata only — no prompts, no generated internals,
+    per Database Blueprint §5.29).
+  - Domain events published for lifecycle changes: `automation:rule-enabled`,
+    `automation:rule-disabled`, `automation:run-started/succeeded/failed`,
+    `automation:job-enqueued`, `automation:job-queued`,
+    `automation:aios-job-created` (all `.v1` envelopes).
+  - Repositories/service/API: repository + UoW layer following backend-core
+    conventions; `AutomationService` facade with server-side tenancy
+    enforcement (optional `X-Niche-Id` header: absent = global
+    compartment, present = strict niche compartment; scope mismatches
+    resolve as not-found); admin API under `/api/v1/admin` with JWT RBAC
+    (`automation:read` / `automation:write`): rules, runs, scheduled jobs,
+    job runs, queue ledger, and AI OS job records.
+  - Celery scaffold: `celery_app.py` / `celery_worker.py` wired from
+    environment (`CELERY_BROKER_URL`, `CELERY_BACKEND_URL`) with
+    `acks_late`, `worker_prefetch_multiplier=1`, time limits, and an empty
+    `beat_schedule` placeholder — no business tasks yet (Step 2).
+  - PostgreSQL migration stream `0001` (`alembic_version_automation`)
+    validated on fresh SQLite (tests) and fresh PostgreSQL 16 (CI
+    database job: single head, upgrade, schema grep, downgrade +
+    re-upgrade).
+- Infrastructure: automation-service added to Docker Compose (port 8800,
+  Postgres + Redis dependencies, healthcheck); CI `database` job validates
+  the automation migration stream; CI `docker` job health-checks
+  automation-service.
+- Tests: 51 automation-service backend tests — retry/backoff math
+  (doubling, cap, exhaustion, jitter bounds, monotonicity), idempotency
+  keys, rule state machine + events, idempotent run triggers + append-only
+  history, queue claim/complete/fail + retry-to-max, AI OS job dedupe +
+  lifecycle + boundary (no AI-internal columns), 10-niche isolation
+  (no cross-niche reads or mutations; global compartment separation), API
+  auth/RBAC/tenancy-header/idempotent-trigger flows, and
+  migration upgrade/downgrade/re-upgrade.
+
+### Changed
+
+- `docs/architecture/14-implementation-roadmap.md`: Phase 12 status updated
+  (M10 foundation complete; Step 2 executors and production scheduler
+  follow).
+- `README.md`: roadmap status line now includes M10 (automation
+  foundation); automation service section added under Architecture.
+- `docs/decisions/README.md`: ADR-0010 indexed.
+
 ## [0.9.0] - 2026-08-12
 
 ### Added
