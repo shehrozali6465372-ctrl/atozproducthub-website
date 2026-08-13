@@ -6,6 +6,66 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-08-12
+
+### Added
+
+- Implemented M9 Admin & Operations Layer (operations milestone) —
+  ADR-0009 freezes admin-service ownership of `admin_db` (own Alembic
+  version table alongside content/affiliate/pinterest/seo/analytics
+  streams), the local niche tenancy mirror for the global admin surface,
+  the append-only audit ledger, the RBAC seed policy, the MFA/session
+  gate, the operations dashboard, and the HMAC-verified internal event
+  ingestion surface.
+- `services/admin-service` v0.9.0:
+  - Domain layer: `admin_niches` (local mirror), `admin_users`, `roles`,
+    `permissions`, `role_permissions`, `user_roles` (niche-scoped
+    assignments), `api_keys` (hash-only storage), `admin_preferences`,
+    `audit_logs` (append-only, actor/action/resource/niche/request-ID),
+    `notifications` + `notification_preferences` + `notification_deliveries`,
+    `queue_items` (durable ledger with explicit state transitions),
+    `webhook_logs` (idempotent on source+event_id), `operation_logs`,
+    `scheduled_jobs`, and `job_runs` — UUIDv7 keys.
+  - RBAC: frozen permission catalog + system-role matrix seeded
+    idempotently; operator identity CRUD; niche-scoped role
+    assign/revoke; effective-permission resolution; MFA provisioning
+    endpoint and MFA-verified session gate for privileged actions;
+    revocable sessions (in-memory dev/CI, Redis production).
+  - Audit: append-only records with server-side actor metadata, search by
+    action/entity/actor/niche/request-ID, and capped CSV export with
+    `Content-Disposition` download.
+  - Ops: `/api/v1/admin/ops/overview|status|isolation` (failure counts,
+    per-state queue visibility, sibling-service health probes, tenancy
+    verification), queue visibility + safe bounded retry of failed items,
+    searchable webhook/operation logs, scheduled-job and job-run
+    visibility, notification inbox + preferences.
+  - Events: `/api/v1/admin/events/ingest` HMAC-SHA256 verification over
+    the raw body (same convention as the analytics webhook), idempotent
+    `(source, event_id)` replays, domain-event → operation mapping, and
+    payload size limits.
+- Frontend (apps/admin): new `/ops` operations dashboard (system status,
+  queue, job runs, isolation), `/ops/logs` (operation + webhook logs), and
+  `/audit` (searchable append-only audit view) — server components over the
+  shared design system with axe-tested accessibility, wired to the real
+  admin API via `NEXT_PUBLIC_ADMIN_API_BASE_URL` with mock fallback; nav
+  and page titles updated; all pages remain noindex.
+- Infrastructure: admin-service added to Docker Compose (port 8700) with
+  Postgres dependency and healthcheck; CI `database` job now validates the
+  admin migration stream on fresh PostgreSQL 16 (head, schema, downgrade +
+  re-upgrade); CI `docker` job health-checks admin-service.
+- Tests: 31 admin-service backend tests (RBAC catalog/matrix, permission
+  denial, MFA gate, user CRUD + role lifecycle, effective permissions,
+  audit append-only/search/export, ops overview/status probes/isolation,
+  queue retry safety, webhook signature + idempotency + size limits,
+  notifications lifecycle/preferences, niche-scoped isolation, migration
+  upgrade/downgrade/re-upgrade on clean DB + single head) plus 3 frontend
+  ops/audit page tests with axe; full M1–M8 regression suite remains green.
+
+### Fixed
+
+- Alembic migration streams remain isolated per service via dedicated
+  version tables (extended to the admin stream).
+
 ## [0.8.0] - 2026-08-11
 
 ### Added

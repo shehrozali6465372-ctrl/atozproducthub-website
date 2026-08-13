@@ -1,10 +1,6 @@
-"""Route registration for admin-service.
+"""Admin-service API routes: admin/ops control plane + event ingestion."""
 
-M3 ships an empty router: business endpoints arrive with their module
-(Phase 4+). Only infrastructure routes (/health, /ready, /metrics) are
-active today via the shared app factory.
-"""
+from atoz_admin_service.routes.admin import router as admin_router
+from atoz_admin_service.routes.events import router as events_router
 
-from fastapi import APIRouter
-
-router = APIRouter(tags=["admin-service"])
+__all__ = ["admin_router", "events_router"]

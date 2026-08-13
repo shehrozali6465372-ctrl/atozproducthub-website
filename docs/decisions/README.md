@@ -15,6 +15,18 @@ Blueprint, API Contracts, UI/UX Design System, Implementation Roadmap).
 4. **Record** — the ADR stays permanent; superseded ADRs are marked
    `Status: Superseded by NNNN`.
 
+## Index
+
+- ADR-0001 — Shared design system (`libs/design-system`)
+- ADR-0002 — Automation service owns the automation database (`automation_db`)
+- ADR-0003 — Backend-core library (`libs/backend-core`)
+- ADR-0004 — Content service owns the CMS database (`content_db`)
+- ADR-0005 — Affiliate service owns the affiliate database (`affiliate_db`)
+- ADR-0006 — Pinterest service owns the Pinterest database (`pinterest_db`)
+- ADR-0007 — SEO service owns the SEO & discovery layer (`seo_db`)
+- ADR-0008 — Analytics service owns the analytics database (`analytics_db`)
+- ADR-0009 — Admin service owns the admin & operations control plane (`admin_db`)
+
 ## Template
 
 ```markdown

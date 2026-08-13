@@ -279,6 +279,23 @@ aggregates business events only; AI-derived insights are read-only
 attributed data that can arrive only through the AI OS Bridge (ADR-0008
 §Contract compliance).
 
+
+Admin & Operations (M9 — `services/admin-service`): the admin module owns
+the admin database (`admin_db`) with its own Alembic stream
+(`alembic_version_admin`), the frozen RBAC catalog + system-role matrix,
+operator identity management with niche-scoped role assignment, the
+append-only audit ledger with capped CSV export, the operations dashboard
+(sibling-service probes, queue visibility, job runs, failure counts),
+searchable webhook/operation logs with safe bounded retry, tenancy
+isolation verification, notifications, and HMAC-verified internal event
+ingestion. Privileged actions are MFA-gated and revocable sessions are
+enforced (in-memory dev/CI, Redis production). The admin frontend pages
+`/ops`, `/ops/logs`, and `/audit` render real admin API data when
+`NEXT_PUBLIC_ADMIN_API_BASE_URL` is configured and fall back to mocks
+otherwise. ADR-0009 freezes the service ownership and boundaries; the
+control plane records and reports business operations only — no AI
+functionality (Website Contract §4).
+
 Frontend (M2 — web + admin wireframes on the shared design system):
 
 ```bash
@@ -291,7 +308,7 @@ npm test          # vitest + axe a11y tests (all workspaces)
 npm run build     # next build (web + admin)
 ```
 
-The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), M3 (backend foundation), M4 (CMS business layer), M5 (affiliate engine), M6 (Pinterest business layer), M7 (SEO & discovery layer), and M8 (analytics business layer) are complete; automation and production follow.
+The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), M3 (backend foundation), M4 (CMS business layer), M5 (affiliate engine), M6 (Pinterest business layer), M7 (SEO & discovery layer), M8 (analytics business layer), and M9 (admin & operations layer) are complete; automation (M10) and production (M11) follow.
 
 ---
 

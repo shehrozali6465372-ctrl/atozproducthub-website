@@ -318,6 +318,17 @@ For every phase: Goal, Scope, Deliverables, Dependencies, Complexity, Risk, Succ
 
 ### Phase 11 — Admin Dashboard
 
+- **Status:** ✅ Complete (M9, v0.9.0 — ADR-0009). Admin & operations
+  control plane: frozen RBAC catalog + system-role matrix seeded
+  idempotently, operator identity management with niche-scoped role
+  assignment, MFA-gated privileged actions and revocable sessions,
+  append-only searchable audit ledger with capped CSV export,
+  operations dashboard (sibling-service probes, queue visibility, job
+  runs, failure counts), searchable webhook/operation logs with safe
+  bounded retry, tenancy isolation verification, notifications, and
+  HMAC-verified internal event ingestion are implemented and tested.
+  Follow-ups: live TOTP verification and OIDC (Authentication milestone),
+  PDF exports, and approval notification routing.
 - **Goal:** The complete operations surface: all admin pages, RBAC views, notifications, exports.
 - **Scope:** all admin pages per design system §11.2 (Dashboard, Analytics, Revenue, Pinterest, Automation, Settings); read-model consumption; RBAC-driven views; notification center; audit viewer; export tooling; admin service commands complete.
 - **Deliverables:** full admin suite; role-based visibility; audit search; CSV/PDF exports; settings management.
@@ -443,9 +454,9 @@ For every phase: Goal, Scope, Deliverables, Dependencies, Complexity, Risk, Succ
 **Phases:** 11, 12.
 **Goal:** Operators fully control the business through the admin suite and automation.
 **Definition of Done:**
-- [ ] All admin pages live; role matrix enforced; audit searchable.
-- [ ] Scheduled jobs reliable for 30 days; failures alert + retry.
-- [ ] Notifications delivered; automation rules governable and audited.
+- [x] All admin pages live; role matrix enforced; audit searchable (v0.9.0).
+- [ ] Scheduled jobs reliable for 30 days; failures alert + retry (Phase 12 follow-up).
+- [ ] Notifications delivered; automation rules governable and audited (Phase 12 follow-up).
 
 ### M8 — Production
 **Phases:** 13.

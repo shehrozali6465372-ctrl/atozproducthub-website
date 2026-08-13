@@ -1,4 +1,4 @@
-# admin-service — skeleton image (build context: repository root).
+# admin-service image (build context: repository root).
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \

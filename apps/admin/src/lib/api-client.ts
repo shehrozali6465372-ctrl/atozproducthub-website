@@ -16,6 +16,16 @@ import {
   MOCK_ADMIN_NICHES,
   MOCK_ADMIN_TAGS,
   NOTIFICATIONS,
+  OPS_OVERVIEW,
+  SYSTEM_STATUS,
+  ISOLATION_CHECK,
+  AUDIT_LOGS,
+  QUEUE_ITEMS,
+  WEBHOOK_LOGS,
+  OPERATION_LOGS,
+  SCHEDULED_JOBS,
+  JOB_RUNS,
+  OPS_NOTIFICATIONS,
   PAGE_TITLES,
   PIN_ACCOUNTS,
   PIN_QUEUE,
@@ -191,6 +201,156 @@ export interface AdminApiClient {
     listSummaries(): Promise<AdminRevenueSummary[]>;
     revenueDashboard(): Promise<AdminRevenueDashboard>;
   };
+  ops: {
+    getOverview(): Promise<OpsOverview>;
+    getSystemStatus(): Promise<SystemStatus>;
+    getIsolationCheck(): Promise<IsolationCheck>;
+    getAudit(filters?: AuditFilters): Promise<AuditEntry[]>;
+    getQueue(filters?: QueueFilters): Promise<OpsQueueItem[]>;
+    retryQueueItem(id: string): Promise<OpsQueueItem>;
+    getWebhookLogs(filters?: LogFilters): Promise<WebhookLogEntry[]>;
+    getOperationLogs(filters?: LogFilters): Promise<OperationLogEntry[]>;
+    getJobs(): Promise<ScheduledJobEntry[]>;
+    getJobRuns(status?: string): Promise<JobRunEntry[]>;
+    getNotifications(): Promise<NotificationEntry[]>;
+    markNotificationRead(id: string): Promise<NotificationEntry>;
+  };
+}
+
+
+// --------------------------------------------------------- ops read models
+export interface OpsOverview {
+  failedQueueItems: number;
+  failedWebhooks: number;
+  failedOperations: number;
+  failedJobRuns: number;
+  openNotifications: number;
+  auditEntries: number;
+  queues: Record<string, number>;
+}
+
+export interface ServiceStatus {
+  id: string;
+  name: string;
+  status: "ok" | "degraded" | "down" | "unknown";
+  version: string | null;
+  latencyMs: number | null;
+  error: string | null;
+}
+
+export interface SystemStatus {
+  overall: string;
+  services: ServiceStatus[];
+}
+
+export interface IsolationCheck {
+  ok: boolean;
+  checks: { table: string; rows: number; orphaned: string[] }[];
+}
+
+export interface AuditFilters {
+  action?: string;
+  entityType?: string;
+  entityId?: string;
+  requestId?: string;
+  nicheId?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface AuditEntry {
+  id: string;
+  nicheId: string | null;
+  adminUserId: string | null;
+  apiKeyId: string | null;
+  action: string;
+  entityType: string;
+  entityId: string;
+  beforeJson: string | null;
+  afterJson: string | null;
+  requestId: string | null;
+  occurredAt: string;
+}
+
+export interface QueueFilters {
+  queue?: string;
+  state?: string;
+  limit?: number;
+}
+
+export interface OpsQueueItem {
+  id: string;
+  nicheId: string | null;
+  queue: string;
+  payloadRef: string;
+  state: string;
+  attempts: number;
+  maxAttempts: number;
+  runAt: string;
+  error: string | null;
+}
+
+export interface LogFilters {
+  source?: string;
+  status?: string;
+  operation?: string;
+  nicheId?: string;
+  limit?: number;
+}
+
+export interface WebhookLogEntry {
+  id: string;
+  nicheId: string | null;
+  source: string;
+  eventId: string;
+  status: string;
+  receivedAt: string;
+  error: string | null;
+}
+
+export interface OperationLogEntry {
+  id: string;
+  nicheId: string | null;
+  operation: string;
+  entityType: string;
+  entityId: string;
+  status: string;
+  message: string;
+  occurredAt: string;
+}
+
+export interface ScheduledJobEntry {
+  id: string;
+  nicheId: string | null;
+  jobKey: string;
+  cronExpr: string;
+  queue: string;
+  handler: string;
+  status: string;
+  nextRunAt: string | null;
+}
+
+export interface JobRunEntry {
+  id: string;
+  scheduledJobId: string;
+  status: string;
+  attempts: number;
+  runAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  error: string | null;
+}
+
+export interface NotificationEntry {
+  id: string;
+  nicheId: string | null;
+  recipientId: string;
+  type: string;
+  title: string;
+  body: string;
+  status: string;
+  createdAt: string;
+  readAt: string | null;
 }
 
 // -------------------------------------------------------- affiliate read models
@@ -605,12 +765,59 @@ const mockAdminApiClient: AdminApiClient = {
   },
   content: mockContentClient,
   affiliate: mockAffiliateClient,
+  ops: {
+    getOverview: () => delay(OPS_OVERVIEW),
+    getSystemStatus: () => delay(SYSTEM_STATUS),
+    getIsolationCheck: () => delay(ISOLATION_CHECK),
+    getAudit: (filters?: AuditFilters) => {
+      let rows = AUDIT_LOGS;
+      if (filters?.action) rows = rows.filter((row) => row.action === filters.action);
+      if (filters?.entityType) rows = rows.filter((row) => row.entityType === filters.entityType);
+      if (filters?.limit) rows = rows.slice(0, filters.limit);
+      return delay(rows);
+    },
+    getQueue: (filters?: QueueFilters) => {
+      let rows = QUEUE_ITEMS;
+      if (filters?.state) rows = rows.filter((item) => item.state === filters.state);
+      if (filters?.queue) rows = rows.filter((item) => item.queue === filters.queue);
+      return delay(rows);
+    },
+    retryQueueItem: (id: string) => {
+      const item = QUEUE_ITEMS.find((entry) => entry.id === id);
+      if (!item) return Promise.reject(new Error("Queue item not found"));
+      return delay({ ...item, state: "queued", error: null });
+    },
+    getWebhookLogs: (filters?: LogFilters) => {
+      let rows = WEBHOOK_LOGS;
+      if (filters?.source) rows = rows.filter((entry) => entry.source === filters.source);
+      if (filters?.status) rows = rows.filter((entry) => entry.status === filters.status);
+      return delay(rows);
+    },
+    getOperationLogs: (filters?: LogFilters) => {
+      let rows = OPERATION_LOGS;
+      if (filters?.operation) rows = rows.filter((entry) => entry.operation === filters.operation);
+      if (filters?.status) rows = rows.filter((entry) => entry.status === filters.status);
+      return delay(rows);
+    },
+    getJobs: () => delay(SCHEDULED_JOBS),
+    getJobRuns: (status?: string) => {
+      const rows = status ? JOB_RUNS.filter((run) => run.status === status) : JOB_RUNS;
+      return delay(rows);
+    },
+    getNotifications: () => delay(OPS_NOTIFICATIONS),
+    markNotificationRead: (id: string) => {
+      const entry = OPS_NOTIFICATIONS.find((item) => item.id === id);
+      if (!entry) return Promise.reject(new Error("Notification not found"));
+      return delay({ ...entry, status: "read", readAt: new Date().toISOString() });
+    },
+  },
 };
 
 // ------------------------------------------------------------------ live mode
 const CONTENT_API_BASE = process.env.NEXT_PUBLIC_CONTENT_API_BASE_URL ?? "";
 const AFFILIATE_API_BASE = process.env.NEXT_PUBLIC_AFFILIATE_API_BASE_URL ?? "";
 const ANALYTICS_API_BASE = process.env.NEXT_PUBLIC_ANALYTICS_API_BASE_URL ?? "";
+const ADMIN_API_BASE = process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL ?? "";
 
 interface LiveArticleDto {
   id: string;
@@ -1388,6 +1595,275 @@ const liveAffiliateClient = {
     })),
 };
 
+// ------------------------------------------------------- live ops client
+function adminFetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  return fetch(`${ADMIN_API_BASE}${path}`, {
+    ...init,
+    headers: { ...liveHeaders(), ...(init?.body ? { "Content-Type": "application/json" } : {}), ...init?.headers },
+  }).then(async (response) => {
+    if (!response.ok) {
+      throw new Error(`Admin ops API request failed: ${response.status} ${response.statusText}`);
+    }
+    return (await response.json()) as T;
+  });
+}
+
+interface LiveAuditDto {
+  id: string;
+  niche_id: string | null;
+  admin_user_id: string | null;
+  api_key_id: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string;
+  before_json: string | null;
+  after_json: string | null;
+  request_id: string | null;
+  occurred_at: string;
+}
+
+interface LiveQueueDto {
+  id: string;
+  niche_id: string | null;
+  queue: string;
+  payload_ref: string;
+  state: string;
+  attempts: number;
+  max_attempts: number;
+  run_at: string;
+  error: string | null;
+}
+
+interface LiveWebhookDto {
+  id: string;
+  niche_id: string | null;
+  source: string;
+  event_id: string;
+  status: string;
+  received_at: string;
+  error: string | null;
+}
+
+interface LiveOperationDto {
+  id: string;
+  niche_id: string | null;
+  operation: string;
+  entity_type: string;
+  entity_id: string;
+  status: string;
+  message: string;
+  occurred_at: string;
+}
+
+interface LiveJobDto {
+  id: string;
+  niche_id: string | null;
+  job_key: string;
+  cron_expr: string;
+  queue: string;
+  handler: string;
+  status: string;
+  next_run_at: string | null;
+}
+
+interface LiveJobRunDto {
+  id: string;
+  scheduled_job_id: string;
+  status: string;
+  attempts: number;
+  run_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+  error: string | null;
+}
+
+interface LiveNotificationDto {
+  id: string;
+  niche_id: string | null;
+  recipient_id: string;
+  type: string;
+  title: string;
+  body: string;
+  status: string;
+  created_at: string;
+  read_at: string | null;
+}
+
+function toAuditEntry(dto: LiveAuditDto): AuditEntry {
+  return {
+    id: dto.id,
+    nicheId: dto.niche_id,
+    adminUserId: dto.admin_user_id,
+    apiKeyId: dto.api_key_id,
+    action: dto.action,
+    entityType: dto.entity_type,
+    entityId: dto.entity_id,
+    beforeJson: dto.before_json,
+    afterJson: dto.after_json,
+    requestId: dto.request_id,
+    occurredAt: dto.occurred_at,
+  };
+}
+
+function toQueueItem(dto: LiveQueueDto): OpsQueueItem {
+  return {
+    id: dto.id,
+    nicheId: dto.niche_id,
+    queue: dto.queue,
+    payloadRef: dto.payload_ref,
+    state: dto.state,
+    attempts: dto.attempts,
+    maxAttempts: dto.max_attempts,
+    runAt: dto.run_at,
+    error: dto.error,
+  };
+}
+
+function toWebhookEntry(dto: LiveWebhookDto): WebhookLogEntry {
+  return {
+    id: dto.id,
+    nicheId: dto.niche_id,
+    source: dto.source,
+    eventId: dto.event_id,
+    status: dto.status,
+    receivedAt: dto.received_at,
+    error: dto.error,
+  };
+}
+
+function toOperationEntry(dto: LiveOperationDto): OperationLogEntry {
+  return {
+    id: dto.id,
+    nicheId: dto.niche_id,
+    operation: dto.operation,
+    entityType: dto.entity_type,
+    entityId: dto.entity_id,
+    status: dto.status,
+    message: dto.message,
+    occurredAt: dto.occurred_at,
+  };
+}
+
+function toScheduledJob(dto: LiveJobDto): ScheduledJobEntry {
+  return {
+    id: dto.id,
+    nicheId: dto.niche_id,
+    jobKey: dto.job_key,
+    cronExpr: dto.cron_expr,
+    queue: dto.queue,
+    handler: dto.handler,
+    status: dto.status,
+    nextRunAt: dto.next_run_at,
+  };
+}
+
+function toJobRun(dto: LiveJobRunDto): JobRunEntry {
+  return {
+    id: dto.id,
+    scheduledJobId: dto.scheduled_job_id,
+    status: dto.status,
+    attempts: dto.attempts,
+    runAt: dto.run_at,
+    startedAt: dto.started_at,
+    finishedAt: dto.finished_at,
+    error: dto.error,
+  };
+}
+
+function toNotification(dto: LiveNotificationDto): NotificationEntry {
+  return {
+    id: dto.id,
+    nicheId: dto.niche_id,
+    recipientId: dto.recipient_id,
+    type: dto.type,
+    title: dto.title,
+    body: dto.body,
+    status: dto.status,
+    createdAt: dto.created_at,
+    readAt: dto.read_at,
+  };
+}
+
+interface LiveServiceStatusDto {
+  name: string;
+  status: string;
+  version: string | null;
+  latency_ms: number | null;
+  error: string | null;
+}
+
+function toServiceStatus(dto: LiveServiceStatusDto): ServiceStatus {
+  return {
+    id: dto.name,
+    name: dto.name,
+    status: dto.status as ServiceStatus["status"],
+    version: dto.version,
+    latencyMs: dto.latency_ms,
+    error: dto.error,
+  };
+}
+
+const liveOpsClient = {
+  getOverview: () => adminFetchJson<OpsOverview>("/api/v1/admin/ops/overview"),
+  getSystemStatus: () =>
+    adminFetchJson<{ overall: string; services: LiveServiceStatusDto[] }>("/api/v1/admin/ops/status").then(
+      (dto) => ({ overall: dto.overall, services: dto.services.map(toServiceStatus) }),
+    ),
+  getIsolationCheck: () => adminFetchJson<IsolationCheck>("/api/v1/admin/ops/isolation"),
+  getAudit: (filters?: AuditFilters) => {
+    const query = new URLSearchParams();
+    if (filters?.action) query.set("action", filters.action);
+    if (filters?.entityType) query.set("entity_type", filters.entityType);
+    if (filters?.entityId) query.set("entity_id", filters.entityId);
+    if (filters?.requestId) query.set("request_id", filters.requestId);
+    if (filters?.limit) query.set("limit", String(filters.limit));
+    return adminFetchJson<LiveAuditDto[]>(`/api/v1/admin/audit?${query.toString()}`).then((rows) =>
+      rows.map(toAuditEntry),
+    );
+  },
+  getQueue: (filters?: QueueFilters) => {
+    const query = new URLSearchParams();
+    if (filters?.queue) query.set("queue", filters.queue);
+    if (filters?.state) query.set("state", filters.state);
+    if (filters?.limit) query.set("limit", String(filters.limit));
+    return adminFetchJson<LiveQueueDto[]>(`/api/v1/admin/queue?${query.toString()}`).then((rows) =>
+      rows.map(toQueueItem),
+    );
+  },
+  retryQueueItem: (id: string) =>
+    adminFetchJson<LiveQueueDto>(`/api/v1/admin/queue/${id}/retry`, { method: "POST" }).then(toQueueItem),
+  getWebhookLogs: (filters?: LogFilters) => {
+    const query = new URLSearchParams();
+    if (filters?.source) query.set("source", filters.source);
+    if (filters?.status) query.set("status", filters.status);
+    return adminFetchJson<LiveWebhookDto[]>(`/api/v1/admin/logs/webhooks?${query.toString()}`).then(
+      (rows) => rows.map(toWebhookEntry),
+    );
+  },
+  getOperationLogs: (filters?: LogFilters) => {
+    const query = new URLSearchParams();
+    if (filters?.operation) query.set("operation", filters.operation);
+    if (filters?.status) query.set("status", filters.status);
+    return adminFetchJson<LiveOperationDto[]>(`/api/v1/admin/logs/operations?${query.toString()}`).then(
+      (rows) => rows.map(toOperationEntry),
+    );
+  },
+  getJobs: () => adminFetchJson<LiveJobDto[]>("/api/v1/admin/jobs").then((rows) => rows.map(toScheduledJob)),
+  getJobRuns: (status?: string) => {
+    const query = new URLSearchParams();
+    if (status) query.set("status", status);
+    return adminFetchJson<LiveJobRunDto[]>(`/api/v1/admin/jobs/runs?${query.toString()}`).then((rows) =>
+      rows.map(toJobRun),
+    );
+  },
+  getNotifications: () =>
+    adminFetchJson<LiveNotificationDto[]>("/api/v1/admin/notifications").then((rows) => rows.map(toNotification)),
+  markNotificationRead: (id: string) =>
+    adminFetchJson<LiveNotificationDto>(`/api/v1/admin/notifications/${id}/read`, { method: "POST" }).then(
+      toNotification,
+    ),
+};
+
 const liveAdminApiClient: AdminApiClient = {
   dashboard: mockAdminApiClient.dashboard,
   analytics: liveAnalyticsClient,
@@ -1395,10 +1871,11 @@ const liveAdminApiClient: AdminApiClient = {
   automation: mockAdminApiClient.automation,
   content: liveContentClient,
   affiliate: liveAffiliateClient,
+  ops: liveOpsClient,
 };
 
 export function createAdminApiClient(): AdminApiClient {
-  return CONTENT_API_BASE || AFFILIATE_API_BASE || ANALYTICS_API_BASE
+  return CONTENT_API_BASE || AFFILIATE_API_BASE || ANALYTICS_API_BASE || ADMIN_API_BASE
     ? liveAdminApiClient
     : mockAdminApiClient;
 }

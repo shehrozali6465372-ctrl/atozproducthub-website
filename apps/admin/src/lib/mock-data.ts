@@ -19,6 +19,9 @@ import {
   Settings,
   Store,
   Workflow,
+  Activity,
+  FileClock,
+  ScrollText,
 } from "lucide-react";
 
 export const NAV_ITEMS: AdminNavItem[] = [
@@ -43,6 +46,17 @@ export const NAV_ITEMS: AdminNavItem[] = [
       { label: "Reconciliation", href: "/affiliate/reconciliation", icon: FileText },
     ],
   },
+  {
+    label: "Operations",
+    href: "/ops",
+    icon: Activity,
+    section: "Governance",
+    children: [
+      { label: "Operations", href: "/ops", icon: Activity },
+      { label: "Audit log", href: "/audit", icon: ScrollText },
+      { label: "Logs", href: "/ops/logs", icon: FileClock },
+    ],
+  },
   { label: "Automation", href: "/automation", icon: Workflow, section: "Governance" },
   { label: "Settings", href: "/settings", icon: Settings, section: "Governance" },
 ];
@@ -64,6 +78,9 @@ export const PAGE_TITLES: Record<string, string> = {
   "/affiliate/reconciliation": "Affiliate Reconciliation",
   "/automation": "Automation",
   "/settings": "Settings",
+  "/ops": "Operations",
+  "/ops/logs": "Operations Logs",
+  "/audit": "Audit Log",
 };
 
 export const NOTIFICATIONS = [
@@ -487,3 +504,267 @@ export const MOCK_AFFILIATE_DASHBOARD = {
   transactionCount: 3,
   clickCount: 128,
 };
+
+// ---------------------------------------------------------------- M9 ops data
+export const OPS_OVERVIEW = {
+  failedQueueItems: 1,
+  failedWebhooks: 2,
+  failedOperations: 3,
+  failedJobRuns: 0,
+  openNotifications: 4,
+  auditEntries: 1284,
+  queues: { queued: 12, claimed: 2, done: 1041, failed: 1 },
+};
+
+export interface MockServiceStatus {
+  id: string;
+  name: string;
+  status: "ok" | "degraded" | "down" | "unknown";
+  version: string | null;
+  latencyMs: number | null;
+  error: string | null;
+}
+
+export const SYSTEM_STATUS: { overall: string; services: MockServiceStatus[] } = {
+  overall: "degraded",
+  services: [
+    { id: "admin-service", name: "admin-service", status: "ok", version: "0.9.0", latencyMs: 4, error: null },
+    { id: "content-service", name: "content-service", status: "ok", version: "0.4.0", latencyMs: 12, error: null },
+    { id: "affiliate-service", name: "affiliate-service", status: "ok", version: "0.5.0", latencyMs: 9, error: null },
+    { id: "pinterest-service", name: "pinterest-service", status: "degraded", version: "0.6.0", latencyMs: 0, error: "rate limited (org_write budget exhausted)" },
+    { id: "seo-service", name: "seo-service", status: "ok", version: "0.7.0", latencyMs: 15, error: null },
+    { id: "analytics-service", name: "analytics-service", status: "ok", version: "0.8.0", latencyMs: 21, error: null },
+  ],
+};
+
+export const ISOLATION_CHECK = {
+  ok: true,
+  checks: [
+    { table: "audit", rows: 1284, orphaned: [] },
+    { table: "queue", rows: 1056, orphaned: [] },
+    { table: "webhook", rows: 412, orphaned: [] },
+    { table: "operation", rows: 2330, orphaned: [] },
+  ],
+};
+
+export const AUDIT_LOGS = [
+  {
+    id: "audit-1",
+    nicheId: "niche-1",
+    adminUserId: "op-1",
+    apiKeyId: null,
+    action: "publish",
+    entityType: "article",
+    entityId: "art-101",
+    beforeJson: null,
+    afterJson: '{"status":"published"}',
+    requestId: "req-001",
+    occurredAt: "2026-08-12T09:04:00Z",
+  },
+  {
+    id: "audit-2",
+    nicheId: "niche-1",
+    adminUserId: "op-2",
+    apiKeyId: null,
+    action: "retry",
+    entityType: "queue_item",
+    entityId: "q-55",
+    beforeJson: '{"state":"failed"}',
+    afterJson: '{"state":"queued"}',
+    requestId: "req-002",
+    occurredAt: "2026-08-12T08:51:00Z",
+  },
+  {
+    id: "audit-3",
+    nicheId: null,
+    adminUserId: "op-1",
+    apiKeyId: "ak-9",
+    action: "assign",
+    entityType: "role",
+    entityId: "pinterest_operator",
+    beforeJson: null,
+    afterJson: '{"admin_user_id":"op-3"}',
+    requestId: "req-003",
+    occurredAt: "2026-08-12T08:12:00Z",
+  },
+];
+
+export const QUEUE_ITEMS = [
+  {
+    id: "q-1",
+    nicheId: "niche-1",
+    queue: "pins",
+    payloadRef: "pin-441",
+    state: "queued",
+    attempts: 0,
+    maxAttempts: 5,
+    runAt: "2026-08-12T10:00:00Z",
+    error: null,
+  },
+  {
+    id: "q-55",
+    nicheId: "niche-1",
+    queue: "pins",
+    payloadRef: "pin-102",
+    state: "failed",
+    attempts: 5,
+    maxAttempts: 5,
+    runAt: "2026-08-12T07:30:00Z",
+    error: "pinterest 429: org_write rate limit exceeded",
+  },
+  {
+    id: "q-2",
+    nicheId: "niche-2",
+    queue: "seo-sitemap",
+    payloadRef: "sitemap-2026-08",
+    state: "queued",
+    attempts: 1,
+    maxAttempts: 3,
+    runAt: "2026-08-12T11:00:00Z",
+    error: null,
+  },
+];
+
+export const WEBHOOK_LOGS = [
+  {
+    id: "wh-1",
+    nicheId: "niche-1",
+    source: "affiliate",
+    eventId: "evt-a-1",
+    status: "processed",
+    receivedAt: "2026-08-12T09:40:00Z",
+    error: null,
+  },
+  {
+    id: "wh-2",
+    nicheId: "niche-1",
+    source: "pinterest",
+    eventId: "evt-p-1",
+    status: "failed",
+    receivedAt: "2026-08-12T09:31:00Z",
+    error: "signature verification failed",
+  },
+  {
+    id: "wh-3",
+    nicheId: null,
+    source: "content",
+    eventId: "evt-c-1",
+    status: "processed",
+    receivedAt: "2026-08-12T09:00:00Z",
+    error: null,
+  },
+];
+
+export const OPERATION_LOGS = [
+  {
+    id: "op-1",
+    nicheId: "niche-1",
+    operation: "content.publish",
+    entityType: "article",
+    entityId: "art-101",
+    status: "succeeded",
+    message: "Published article art-101",
+    occurredAt: "2026-08-12T09:04:00Z",
+  },
+  {
+    id: "op-2",
+    nicheId: "niche-1",
+    operation: "pinterest.pin_publish",
+    entityType: "pin",
+    entityId: "pin-102",
+    status: "failed",
+    message: "pinterest 429: org_write rate limit exceeded",
+    occurredAt: "2026-08-12T07:30:00Z",
+  },
+  {
+    id: "op-3",
+    nicheId: "niche-2",
+    operation: "affiliate.revenue_attributed",
+    entityType: "conversion",
+    entityId: "conv-7",
+    status: "succeeded",
+    message: "Commission attributed",
+    occurredAt: "2026-08-12T08:15:00Z",
+  },
+];
+
+export const SCHEDULED_JOBS = [
+  {
+    id: "job-1",
+    nicheId: null,
+    jobKey: "analytics.daily-rollup",
+    cronExpr: "0 2 * * *",
+    queue: "rollups",
+    handler: "analytics-service.rollup",
+    status: "enabled",
+    nextRunAt: "2026-08-13T02:00:00Z",
+  },
+  {
+    id: "job-2",
+    nicheId: null,
+    jobKey: "seo.sitemap-rebuild",
+    cronExpr: "0 4 * * *",
+    queue: "seo",
+    handler: "seo-service.sitemap",
+    status: "enabled",
+    nextRunAt: "2026-08-13T04:00:00Z",
+  },
+  {
+    id: "job-3",
+    nicheId: null,
+    jobKey: "affiliate.reconcile",
+    cronExpr: "0 6 * * 1",
+    queue: "affiliate",
+    handler: "affiliate-service.reconcile",
+    status: "enabled",
+    nextRunAt: "2026-08-17T06:00:00Z",
+  },
+];
+
+export const JOB_RUNS = [
+  {
+    id: "run-1",
+    scheduledJobId: "job-1",
+    status: "success",
+    attempts: 1,
+    runAt: "2026-08-12T02:00:00Z",
+    startedAt: "2026-08-12T02:00:01Z",
+    finishedAt: "2026-08-12T02:00:42Z",
+    error: null,
+  },
+  {
+    id: "run-2",
+    scheduledJobId: "job-2",
+    status: "failed",
+    attempts: 2,
+    runAt: "2026-08-12T04:00:00Z",
+    startedAt: "2026-08-12T04:00:01Z",
+    finishedAt: "2026-08-12T04:00:05Z",
+    error: "typesense connection refused",
+  },
+];
+
+export const OPS_NOTIFICATIONS = [
+  {
+    id: "n-1",
+    nicheId: "niche-1",
+    recipientId: "op-1",
+    type: "failure",
+    title: "Pin publish failed",
+    body: "pin-102 exceeded the Pinterest org_write rate limit.",
+    status: "unread",
+    createdAt: "2026-08-12T07:30:00Z",
+    readAt: null,
+  },
+  {
+    id: "n-2",
+    nicheId: null,
+    recipientId: "op-1",
+    type: "report.ready",
+    title: "Daily analytics report ready",
+    body: "Rollup for 2026-08-11 is available.",
+    status: "read",
+    createdAt: "2026-08-12T02:05:00Z",
+    readAt: "2026-08-12T08:00:00Z",
+  },
+];

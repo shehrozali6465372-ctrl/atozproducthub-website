@@ -206,6 +206,37 @@ services:
       retries: 5
       start_period: 5s
 
+  admin-service:
+    build:
+      context: ../..
+      dockerfile: services/admin-service/Dockerfile
+    ports:
+      - "8700:8000"
+    environment:
+      APP_ENV: dev
+      APP_LOG_LEVEL: INFO
+      # Control-plane data lives in the shared Postgres (admin_db schema
+      # tables are created by the admin-service migrations); JWT and event
+      # secrets are dev defaults (production via Vault).
+      DATABASE_URL: postgresql+asyncpg://atoz:atoz@postgres:5432/atoz
+      JWT_SECRET: dev-only-admin-jwt-secret-change-in-production
+      EVENT_WEBHOOK_SECRET: dev-only-admin-event-secret-change-in-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
   postgres:
     image: postgres:16-alpine
     environment:
