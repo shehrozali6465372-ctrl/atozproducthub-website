@@ -339,6 +339,31 @@ class AutomationService:
         async with self._uow_factory().transaction() as unit:
             return await unit.scheduled_jobs.list_scoped(niche_id)
 
+    async def list_due_scheduled_jobs(self, now: datetime) -> Sequence[ScheduledJob]:
+        """Internal scheduler scan: enabled jobs whose ``next_run_at`` passed.
+
+        Runs across every scope (single-scheduler Beat). Each returned job
+        is enqueued with its own ``niche_id``; sibling calls then carry that
+        scope server-side, so no cross-niche work can ever be produced.
+        """
+        async with self._uow_factory().transaction() as unit:
+            return await unit.scheduled_jobs.list_due(now)
+
+    async def update_scheduled_job_next_run(
+        self,
+        job_id: str,
+        niche_id: str | None,
+        *,
+        next_run_at: datetime,
+    ) -> ScheduledJob:
+        """Advance ``next_run_at`` after a Beat enqueue (croniter next)."""
+        async with self._uow_factory().transaction() as unit:
+            job = await self._scoped_get(unit.scheduled_jobs, job_id, niche_id)
+            if job is None:
+                raise NotFoundError("Scheduled job not found.")
+            job.next_run_at = next_run_at
+            return job
+
     async def set_scheduled_job_status(
         self, job_id: str, niche_id: str | None, *, enabled: bool
     ) -> ScheduledJob:
@@ -390,6 +415,76 @@ class AutomationService:
                 niche_id=job.niche_id,
                 queue=job.queue,
                 payload_ref=f"job_run:{run_row.id}",
+                state=QueueState.QUEUED.value,
+                attempts=0,
+                max_attempts=self._settings.queue_max_attempts,
+                run_at=run_at or _utcnow(),
+            )
+            await unit.queue.add(item)
+            job.last_run_at = _utcnow()
+            await self.publish(
+                job_enqueued_event(
+                    niche_id=job.niche_id,
+                    job_id=job.id,
+                    run_id=run_row.id,
+                    queue=job.queue,
+                    run_at=run_row.run_at.isoformat(),
+                )
+            )
+            await self.publish(
+                job_queued_event(
+                    niche_id=job.niche_id,
+                    queue_item_id=item.id,
+                    payload_ref=item.payload_ref,
+                    queue=item.queue,
+                )
+            )
+            return run_row, item
+
+    async def enqueue_job_with_config(
+        self,
+        job_id: str,
+        niche_id: str | None,
+        *,
+        run_at: datetime | None = None,
+        config: dict[str, Any] | None = None,
+    ) -> tuple[JobRun, QueueItem]:
+        """Queue one execution of a scheduled job with an override config.
+
+        The override config is stored **on the queue item** (JSON payload
+        reference), never merged into the scheduled job definition, so the
+        frozen ``config_json`` stays intact for future scheduled runs. The
+        execution workflow unwraps the ``{job_run_id, scheduled_job_id,
+        config}`` reference and runs the executor with the override.
+        """
+        async with self._uow_factory().transaction() as unit:
+            job = await self._scoped_get(unit.scheduled_jobs, job_id, niche_id)
+            if job is None:
+                raise NotFoundError("Scheduled job not found.")
+            if job.status != "enabled":
+                raise ValidationError("Only enabled scheduled jobs can be enqueued.")
+            run_row = JobRun(
+                id=uuid7(),
+                niche_id=job.niche_id,
+                scheduled_job_id=job.id,
+                run_at=run_at or _utcnow(),
+                status=JobRunStatus.PENDING.value,
+                attempts=0,
+            )
+            await unit.job_runs.add(run_row)
+            payload_ref = json.dumps(
+                {
+                    "job_run_id": run_row.id,
+                    "scheduled_job_id": job.id,
+                    "config": config or {},
+                },
+                sort_keys=True,
+            )
+            item = QueueItem(
+                id=uuid7(),
+                niche_id=job.niche_id,
+                queue=job.queue,
+                payload_ref=payload_ref,
                 state=QueueState.QUEUED.value,
                 attempts=0,
                 max_attempts=self._settings.queue_max_attempts,
@@ -587,6 +682,152 @@ class AutomationService:
             return await unit.queue.list_scoped(
                 niche_id, queue=queue, state=state, limit=limit, offset=offset
             )
+
+    async def list_queue_aggregate(
+        self,
+        niche_id: str | None,
+        *,
+        queue: str | None = None,
+        state: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        """Queue ledger rows with the niche slug attached (admin dashboard)."""
+        async with self._uow_factory().transaction() as unit:
+            items = await unit.queue.list_scoped(
+                niche_id, queue=queue, state=state, limit=limit, offset=offset
+            )
+            slugs = await self._niche_slug_map(unit, items)
+            rows: list[dict[str, Any]] = []
+            for item in items:
+                row = {
+                    "id": item.id,
+                    "niche_id": item.niche_id,
+                    "niche_slug": slugs.get(item.niche_id),
+                    "queue": item.queue,
+                    "payload_ref": item.payload_ref,
+                    "state": item.state,
+                    "attempts": item.attempts,
+                    "max_attempts": item.max_attempts,
+                    "run_at": item.run_at.isoformat(),
+                    "completed_at": item.completed_at.isoformat() if item.completed_at else None,
+                    "error": item.error,
+                }
+                rows.append(row)
+            return rows
+
+    async def list_job_runs_detailed(
+        self,
+        niche_id: str | None,
+        *,
+        job_id: str | None = None,
+        status: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        """Job runs with the job key + niche slug attached (admin dashboard)."""
+        async with self._uow_factory().transaction() as unit:
+            runs = await unit.job_runs.list_scoped(
+                niche_id, job_id=job_id, status=status, limit=limit, offset=offset
+            )
+            job_keys: dict[str, str] = {}
+            for run in runs:
+                if run.scheduled_job_id not in job_keys:
+                    job = await unit.scheduled_jobs.get(run.scheduled_job_id)
+                    job_keys[run.scheduled_job_id] = job.job_key if job else ""
+            slugs = await self._niche_slug_map(unit, runs)
+            rows: list[dict[str, Any]] = []
+            for run in runs:
+                rows.append(
+                    {
+                        "id": run.id,
+                        "niche_id": run.niche_id,
+                        "niche_slug": slugs.get(run.niche_id),
+                        "scheduled_job_id": run.scheduled_job_id,
+                        "job_key": job_keys.get(run.scheduled_job_id, ""),
+                        "run_at": run.run_at.isoformat(),
+                        "status": run.status,
+                        "attempts": run.attempts,
+                        "started_at": run.started_at.isoformat() if run.started_at else None,
+                        "finished_at": run.finished_at.isoformat() if run.finished_at else None,
+                        "output_ref": run.output_ref,
+                        "error": run.error,
+                    }
+                )
+            return rows
+
+    async def retry_job_run(self, run_id: str, niche_id: str | None) -> tuple[JobRun, QueueItem]:
+        """Retry a terminal job run: create a fresh execution for its job.
+
+        The old run stays terminal (audit history is immutable); the new
+        run carries the job's current config. A pending/running run cannot
+        be retried (cancel it first).
+        """
+        async with self._uow_factory().transaction() as unit:
+            run = await self._scoped_get(unit.job_runs, run_id, niche_id)
+            if run is None:
+                raise NotFoundError("Job run not found.")
+            if run.status not in (JobRunStatus.FAILED.value, JobRunStatus.CANCELLED.value):
+                raise ValidationError("Only failed/cancelled job runs can be retried.")
+        return await self.enqueue_job(run.scheduled_job_id, niche_id)
+
+    async def cancel_queue_item(self, item_id: str, niche_id: str | None) -> QueueItem:
+        """Cancel a queued/claimed queue item by operator action.
+
+        The item is marked terminal ``failed`` with the operator-cancelled
+        error (no new states are introduced to the frozen ledger). A linked
+        pending/running job run is cancelled in the same transaction.
+        """
+        async with self._uow_factory().transaction() as unit:
+            item = await unit.queue.get_scoped(item_id, niche_id)
+            if item is None:
+                raise NotFoundError("Queue item not found.")
+            if item.state not in (QueueState.QUEUED.value, QueueState.CLAIMED.value):
+                raise ValidationError("Only queued/claimed items can be cancelled.")
+            item.state = QueueState.FAILED.value
+            item.completed_at = _utcnow()
+            item.error = "cancelled by operator"
+            if item.payload_ref.startswith("job_run:"):
+                run_id = item.payload_ref.split(":", 1)[1]
+                run = await unit.job_runs.get(run_id)
+                if run is not None and run.status in (
+                    JobRunStatus.PENDING.value,
+                    JobRunStatus.RUNNING.value,
+                ):
+                    run.status = JobRunStatus.CANCELLED.value
+                    run.finished_at = _utcnow()
+            return item
+
+    async def retry_queue_item(self, item_id: str, niche_id: str | None) -> QueueItem:
+        """Requeue a terminal (failed) queue item for a new attempt.
+
+        Attempts are kept for audit transparency; the item is re-queued
+        immediately (``run_at = now``) and the next claim/execution decides
+        the outcome. Pending work cannot be retried (cancel first).
+        """
+        async with self._uow_factory().transaction() as unit:
+            item = await unit.queue.get_scoped(item_id, niche_id)
+            if item is None:
+                raise NotFoundError("Queue item not found.")
+            if item.state != QueueState.FAILED.value:
+                raise ValidationError("Only failed queue items can be retried.")
+            item.state = QueueState.QUEUED.value
+            item.run_at = _utcnow()
+            item.completed_at = None
+            item.error = None
+            return item
+
+    async def _niche_slug_map(self, unit, rows) -> dict[str | None, str | None]:
+        """Resolve niche slugs for a row set (one lookup per niche)."""
+        slugs: dict[str | None, str | None] = {}
+        seen: set[str] = set()
+        for row in rows:
+            niche_id = getattr(row, "niche_id", None)
+            if niche_id and niche_id not in seen:
+                niche = await unit.niches.get(niche_id)
+                slugs[niche_id] = niche.slug if niche else None
+                seen.add(niche_id)
+        return slugs
 
     # -------------------------------------------------------- AI OS jobs
     async def create_aios_job(

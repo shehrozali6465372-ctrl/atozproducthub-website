@@ -12,8 +12,10 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Header, Query
 
 from atoz_automation_service.errors import ValidationError
+from atoz_automation_service.executors.registry import ExecutorRegistry
 from atoz_automation_service.routes.deps import (
     get_automation_service,
+    get_executor_registry,
     get_niche_id,
     require_niche,
     require_permission,
@@ -22,12 +24,16 @@ from atoz_automation_service.schemas import (
     AiosJobCreate,
     AiosJobOut,
     AiosJobStatusIn,
+    ExecutorOut,
+    JobRunDetailOut,
     JobRunOut,
     NicheMirrorCreate,
     QueueEnqueueIn,
+    QueueItemDetailOut,
     QueueItemOut,
     RuleCreate,
     RuleOut,
+    RunJobRequest,
     RunOut,
     ScheduledJobCreate,
     ScheduledJobOut,
@@ -247,12 +253,18 @@ async def disable_job(
 async def enqueue_job(
     job_id: str,
     run_at: datetime | None = Query(default=None),
+    payload: RunJobRequest | None = None,
     niche_id: str | None = Depends(get_niche_id),
     _=Depends(require_niche),
     _claims: TokenClaims = Depends(WRITE),
     service: AutomationService = Depends(get_automation_service),
 ) -> dict:
-    run_row, item = await service.enqueue_job(job_id, niche_id, run_at=run_at)
+    if payload is not None and payload.config:
+        run_row, item = await service.enqueue_job_with_config(
+            job_id, niche_id, run_at=run_at, config=payload.config
+        )
+    else:
+        run_row, item = await service.enqueue_job(job_id, niche_id, run_at=run_at)
     return {
         "run": JobRunOut.model_validate(run_row).model_dump(),
         "queue_item": QueueItemOut.model_validate(item).model_dump(),
@@ -329,6 +341,40 @@ async def cancel_job_run(
     return JobRunOut.model_validate(run)
 
 
+@router.post("/job-runs/{run_id}/retry", summary="Retry a failed/cancelled job run")
+async def retry_job_run(
+    run_id: str,
+    niche_id: str | None = Depends(get_niche_id),
+    _=Depends(require_niche),
+    _claims: TokenClaims = Depends(WRITE),
+    service: AutomationService = Depends(get_automation_service),
+) -> dict:
+    run_row, item = await service.retry_job_run(run_id, niche_id)
+    return {
+        "run": JobRunOut.model_validate(run_row).model_dump(),
+        "queue_item": QueueItemOut.model_validate(item).model_dump(),
+    }
+
+
+@router.get("/jobs/runs", summary="List job runs with job key + niche slug")
+async def list_job_runs_detailed(
+    job_id: str | None = Query(default=None, max_length=36),
+    status: str | None = Query(
+        default=None, pattern="^(pending|running|success|failed|cancelled)$"
+    ),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    niche_id: str | None = Depends(get_niche_id),
+    _=Depends(require_niche),
+    _claims: TokenClaims = Depends(READ),
+    service: AutomationService = Depends(get_automation_service),
+) -> list[JobRunDetailOut]:
+    rows = await service.list_job_runs_detailed(
+        niche_id, job_id=job_id, status=status, limit=limit, offset=offset
+    )
+    return [JobRunDetailOut.model_validate(r) for r in rows]
+
+
 # ------------------------------------------------------------------ queue
 @router.get("/queue", summary="List queue ledger items in scope")
 async def list_queue(
@@ -343,6 +389,23 @@ async def list_queue(
 ) -> list[QueueItemOut]:
     items = await service.list_queue(niche_id, queue=queue, state=state, limit=limit, offset=offset)
     return [QueueItemOut.model_validate(i) for i in items]
+
+
+@router.get("/queue/detailed", summary="List queue ledger items with niche slug")
+async def list_queue_detailed(
+    queue: str | None = Query(default=None, max_length=80),
+    state: str | None = Query(default=None, pattern="^(queued|claimed|done|failed)$"),
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    niche_id: str | None = Depends(get_niche_id),
+    _=Depends(require_niche),
+    _claims: TokenClaims = Depends(READ),
+    service: AutomationService = Depends(get_automation_service),
+) -> list[QueueItemDetailOut]:
+    rows = await service.list_queue_aggregate(
+        niche_id, queue=queue, state=state, limit=limit, offset=offset
+    )
+    return [QueueItemDetailOut.model_validate(r) for r in rows]
 
 
 @router.post("/queue/enqueue", summary="Idempotent enqueue", status_code=201)
@@ -399,6 +462,44 @@ async def fail(
 ) -> QueueItemOut:
     item = await service.fail_queue_item(item_id, niche_id, error=error, retry=retry)
     return QueueItemOut.model_validate(item)
+
+
+@router.post("/queue/{item_id}/retry", summary="Requeue a failed queue item")
+async def retry_queue_item(
+    item_id: str,
+    niche_id: str | None = Depends(get_niche_id),
+    _=Depends(require_niche),
+    _claims: TokenClaims = Depends(WRITE),
+    service: AutomationService = Depends(get_automation_service),
+) -> QueueItemOut:
+    item = await service.retry_queue_item(item_id, niche_id)
+    return QueueItemOut.model_validate(item)
+
+
+@router.post("/queue/{item_id}/cancel", summary="Cancel a queued/claimed queue item")
+async def cancel_queue_item(
+    item_id: str,
+    niche_id: str | None = Depends(get_niche_id),
+    _=Depends(require_niche),
+    _claims: TokenClaims = Depends(WRITE),
+    service: AutomationService = Depends(get_automation_service),
+) -> QueueItemOut:
+    item = await service.cancel_queue_item(item_id, niche_id)
+    return QueueItemOut.model_validate(item)
+
+
+# --------------------------------------------------------------- executors
+@router.get("/executors", summary="List registered business executors (read-only)")
+async def list_executors(
+    _claims: TokenClaims = Depends(READ),
+    registry: ExecutorRegistry = Depends(get_executor_registry),
+) -> list[ExecutorOut]:
+    executors: list[ExecutorOut] = []
+    for name in registry.names():
+        executor = registry.get(name)
+        if executor is not None:
+            executors.append(ExecutorOut(name=executor.name, queue=executor.queue))
+    return executors
 
 
 # -------------------------------------------------------------- AI OS jobs

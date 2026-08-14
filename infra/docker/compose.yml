@@ -217,7 +217,7 @@ services:
       APP_LOG_LEVEL: INFO
       # Durable automation data lives in the shared Postgres (automation_db
       # tables are created by the automation-service migrations); the Celery
-      # broker/backend use Redis (scaffold only — no business tasks yet).
+      # broker/backend use Redis; worker + Beat run as separate services.
       DATABASE_URL: postgresql+asyncpg://atoz:atoz@postgres:5432/atoz
       JWT_SECRET: dev-only-automation-jwt-secret-change-in-production
       CELERY_BROKER_URL: redis://redis:6379/0
@@ -239,6 +239,61 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
+
+  automation-worker:
+    build:
+      context: ../..
+      dockerfile: services/automation-service/Dockerfile
+    command:
+      [
+        "celery",
+        "-A",
+        "atoz_automation_service.celery_app:celery_app",
+        "worker",
+        "-Q",
+        "automation,celery",
+        "--concurrency=2",
+        "--max-tasks-per-child=200",
+      ]
+    environment:
+      APP_ENV: dev
+      APP_LOG_LEVEL: INFO
+      DATABASE_URL: postgresql+asyncpg://atoz:atoz@postgres:5432/atoz
+      JWT_SECRET: dev-only-automation-jwt-secret-change-in-production
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_BACKEND_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      automation-service:
+        condition: service_started
+
+  automation-beat:
+    build:
+      context: ../..
+      dockerfile: services/automation-service/Dockerfile
+    command:
+      [
+        "celery",
+        "-A",
+        "atoz_automation_service.celery_app:celery_app",
+        "beat",
+        "--loglevel=INFO",
+      ]
+    environment:
+      APP_ENV: dev
+      APP_LOG_LEVEL: INFO
+      DATABASE_URL: postgresql+asyncpg://atoz:atoz@postgres:5432/atoz
+      JWT_SECRET: dev-only-automation-jwt-secret-change-in-production
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_BACKEND_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   admin-service:
     build:

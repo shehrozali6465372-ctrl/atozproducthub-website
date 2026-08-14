@@ -305,12 +305,18 @@ triggers), and `aios_job_records` (Bridge correlation metadata only —
 `job_runs`, and `queue_items` remain admin-owned (ADR-0009) and are
 integrated by identical table mapping (ADR-0010). The foundation ships
 rule/run state machines, the durable queue ledger with exponential-backoff
-retries, the job execution lifecycle, Celery worker/Beat scaffolding
-(no business tasks yet), and a JWT RBAC admin API under `/api/v1/admin`
-with strict `X-Niche-Id` tenancy. Step 2 wires the business executors
-(Pinterest publishing, sitemap rebuild, affiliate reconciliation, AI OS job
-dispatch) — the website remains a business platform; all intelligence stays
-in the AI OS (Website Contract §4).
+retries, and the job execution lifecycle. Step 2 (v0.11.0, ADR-0011) adds
+the production execution engine: five business executors (Pinterest pin
+publishing, sitemap rebuild, affiliate reconciliation, analytics rollup,
+AI OS job dispatch) that orchestrate owning sibling services via
+short-lived service-to-service JWTs, a real Celery worker + single-scheduler
+Beat (Redis lock, croniter UTC), durable-ledger retries with late-ack
+idempotent redelivery, and best-effort job notifications routed to the
+admin internal channel. The admin `/automation` UI operates rules,
+scheduled jobs, execution history, the queue ledger, and the executor
+catalog against a JWT RBAC API under `/api/v1/admin` with strict
+`X-Niche-Id` tenancy. The website remains a business platform; all
+intelligence stays in the AI OS (Website Contract §4).
 
 Frontend (M2 — web + admin wireframes on the shared design system):
 
@@ -324,7 +330,7 @@ npm test          # vitest + axe a11y tests (all workspaces)
 npm run build     # next build (web + admin)
 ```
 
-The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), M3 (backend foundation), M4 (CMS business layer), M5 (affiliate engine), M6 (Pinterest business layer), M7 (SEO & discovery layer), M8 (analytics business layer), M9 (admin & operations layer), and M10 (automation foundation) are complete; production (M11) follows.
+The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), M3 (backend foundation), M4 (CMS business layer), M5 (affiliate engine), M6 (Pinterest business layer), M7 (SEO & discovery layer), M8 (analytics business layer), M9 (admin & operations layer), M10 (automation foundation + business executors) are complete; production (M11) follows.
 
 ---
 

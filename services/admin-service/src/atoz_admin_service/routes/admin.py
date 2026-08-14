@@ -449,6 +449,42 @@ async def create_notification(
     return NotificationOut.model_validate(notification, from_attributes=True)
 
 
+@router.post(
+    "/internal/notifications",
+    summary="Create a notification from a service account (internal channel)",
+    status_code=201,
+)
+async def create_internal_notification(
+    payload: NotificationCreate,
+    request: Request,
+    _claims=Depends(ADMIN_WRITE),
+    service: AdminService = Depends(get_admin_service),
+) -> NotificationOut:
+    """Service-account notification delivery (automation executors).
+
+    Requires a service JWT carrying ``admin:write`` (minted against the
+    shared admin secret) and, when ``INTERNAL_TOKEN`` is configured, the
+    matching ``X-Internal-Token`` header. MFA is intentionally not required:
+    this channel is for machine-to-machine delivery, never human sessions.
+    """
+    settings = request.app.state.settings
+    if settings.internal_token:
+        presented = request.headers.get("X-Internal-Token", "")
+        if presented != settings.internal_token:
+            from atoz_admin_service.errors import PermissionDeniedError
+
+            raise PermissionDeniedError("Invalid internal token.")
+    notification = await service.create_notification(
+        recipient_id=payload.recipient_id,
+        type=payload.type,
+        title=payload.title,
+        body=payload.body,
+        niche_id=payload.niche_id,
+        action_ref=payload.action_ref,
+    )
+    return NotificationOut.model_validate(notification, from_attributes=True)
+
+
 @router.post("/notifications/{notification_id}/read", summary="Mark a notification read")
 async def mark_notification_read(
     notification_id: str,

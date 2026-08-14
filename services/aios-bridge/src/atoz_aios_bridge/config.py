@@ -31,6 +31,16 @@ class Settings(BaseServiceSettings):
     # Contract schemas live in libs/contracts/aios/ (overridable in tests).
     aios_contracts_dir: str | None = None
 
+    # Callback target for AI OS job-status webhooks (internal URL — never a
+    # frontend URL). The inbound receiver verifies the AI OS signature
+    # before processing.
+    aios_callback_url: str = "http://localhost:8100/bridge/jobs/status"
+
+    # Shared secret for business-layer service accounts (automation
+    # executor dispatch). Empty in dev = header not enforced; production
+    # sets a Vault-issued shared secret.
+    internal_token: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

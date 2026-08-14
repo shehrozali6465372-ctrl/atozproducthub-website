@@ -99,3 +99,69 @@ def aios_job_created_event(
         aggregate_id=job_id,
         payload={"contract": contract, "direction": direction},
     )
+
+
+def job_started_event(*, niche_id: str | None, run_id: str, job_id: str) -> EventEnvelope:
+    return _envelope(
+        "automation:job-started.v1",
+        niche_id=niche_id,
+        aggregate_id=run_id,
+        payload={"scheduled_job_id": job_id},
+    )
+
+
+def job_succeeded_event(
+    *, niche_id: str | None, run_id: str, job_id: str, output_ref: str | None
+) -> EventEnvelope:
+    return _envelope(
+        "automation:job-succeeded.v1",
+        niche_id=niche_id,
+        aggregate_id=run_id,
+        payload={"scheduled_job_id": job_id, "output_ref": output_ref},
+    )
+
+
+def job_failed_event(
+    *, niche_id: str | None, run_id: str, job_id: str, error: str | None
+) -> EventEnvelope:
+    return _envelope(
+        "automation:job-failed.v1",
+        niche_id=niche_id,
+        aggregate_id=run_id,
+        payload={"scheduled_job_id": job_id, "error": error},
+    )
+
+
+def job_retry_scheduled_event(
+    *, niche_id: str | None, run_id: str, job_id: str, next_run_at: str, attempts: int
+) -> EventEnvelope:
+    return _envelope(
+        "automation:job-retry-scheduled.v1",
+        niche_id=niche_id,
+        aggregate_id=run_id,
+        payload={
+            "scheduled_job_id": job_id,
+            "next_run_at": next_run_at,
+            "attempts": attempts,
+        },
+    )
+
+
+def aios_job_succeeded_event(*, niche_id: str, job_id: str, contract: str) -> EventEnvelope:
+    return _envelope(
+        "automation:aios-job-succeeded.v1",
+        niche_id=niche_id,
+        aggregate_id=job_id,
+        payload={"contract": contract},
+    )
+
+
+def aios_job_failed_event(
+    *, niche_id: str, job_id: str, contract: str, error: str | None
+) -> EventEnvelope:
+    return _envelope(
+        "automation:aios-job-failed.v1",
+        niche_id=niche_id,
+        aggregate_id=job_id,
+        payload={"contract": contract, "error": error},
+    )

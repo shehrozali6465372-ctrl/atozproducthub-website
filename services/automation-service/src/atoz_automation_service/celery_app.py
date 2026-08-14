@@ -1,16 +1,16 @@
-"""Celery application scaffold for automation-service (Task 20 §9).
+"""Celery application for automation-service (M10 Step 2).
 
-Foundation only: the application, worker, and Beat entry points exist and
-are configurable via environment; **no business tasks are registered yet**.
-Step 2 wires executors (Pinterest publishing, sitemap rebuild, affiliate
-reconciliation, AI OS job dispatch) as Celery tasks against the durable
-``queue_items`` ledger.
+Business executors (Pinterest publishing, sitemap rebuild, affiliate
+reconciliation, analytics rollups, AI OS dispatch) run as Celery tasks
+against the durable ``queue_items`` ledger; the DB-driven scheduler tick is
+woken by a Beat schedule.
 
-Celery conventions applied now (per Celery docs for production reliability):
+Celery conventions applied (per Celery docs for production reliability):
 ``acks_late=True`` with ``worker_prefetch_multiplier=1`` so a crashed worker
-does not lose claimed work; explicit time limits; Beat is configured from an
-empty schedule placeholder and must be run with a single-scheduler locking
-strategy in production to avoid duplicate periodic triggers.
+does not lose claimed work; explicit time limits; ``max_retries=0`` on tasks
+because retries belong to the durable ledger (never unbounded worker
+auto-retries); and a single-scheduler Beat strategy (Redis ``SET NX EX``
+lock in the tick) so duplicate periodic triggers are impossible.
 """
 
 from celery import Celery
@@ -39,8 +39,16 @@ def build_celery_app(settings: Settings | None = None) -> Celery:
         task_acks_late=True,
         worker_prefetch_multiplier=1,
         worker_max_tasks_per_child=200,
-        task_routes={},  # Step 2 registers routes per business queue
-        beat_schedule={},  # Step 2 registers the production scheduler
+        task_routes={
+            "automation.run_executor": {"queue": "automation"},
+            "automation.beat_tick": {"queue": "celery"},
+        },
+        beat_schedule={
+            "automation-beat-tick": {
+                "task": "automation.beat_tick",
+                "schedule": settings.beat_tick_interval_seconds,
+            },
+        },
     )
     return app
 

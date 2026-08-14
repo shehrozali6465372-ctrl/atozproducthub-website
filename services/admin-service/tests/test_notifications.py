@@ -5,6 +5,7 @@ from .fixtures import (
     api_client,
     build_app,
     headers,
+    make_settings,
     scenario,
 )
 
@@ -80,5 +81,114 @@ def test_notification_preferences_roundtrip() -> None:
             body = updated.json()
             assert body["channels"] == ["inbox", "email"]
             assert body["quiet_hours"]["start"] == "22:00"
+
+    scenario(run)
+
+
+def test_internal_notification_channel_for_service_accounts() -> None:
+    """Automation executors deliver through the internal channel (no MFA)."""
+
+    async def run() -> None:
+        app, _engine = await build_app(settings=make_settings(internal_token="svc-token-1"))
+        service = app.state.admin_service
+        user = await service.create_user(
+            subject="recipient",
+            email="recipient@example.com",
+            display_name="Recipient",
+            status="active",
+            roles=[],
+        )
+        async with await api_client(app) as client:
+            response = await client.post(
+                "/api/v1/admin/internal/notifications",
+                headers=headers(token=WRITE_TOKEN, extra={"X-Internal-Token": "svc-token-1"}),
+                json={
+                    "recipient_id": user.id,
+                    "type": "automation.job.failed",
+                    "title": "Automation job failed",
+                    "body": "pin publishing exceeded retries",
+                    "action_ref": "queue-item-1",
+                },
+            )
+            assert response.status_code == 201
+            notification = response.json()
+            assert notification["type"] == "automation.job.failed"
+            assert notification["status"] == "unread"
+            assert notification["action_ref"] == "queue-item-1"
+
+    scenario(run)
+
+
+def test_internal_notification_rejects_wrong_token() -> None:
+    async def run() -> None:
+        app, _engine = await build_app(settings=make_settings(internal_token="svc-token-1"))
+        service = app.state.admin_service
+        user = await service.create_user(
+            subject="recipient",
+            email="recipient@example.com",
+            display_name="Recipient",
+            status="active",
+            roles=[],
+        )
+        async with await api_client(app) as client:
+            response = await client.post(
+                "/api/v1/admin/internal/notifications",
+                headers=headers(token=WRITE_TOKEN, extra={"X-Internal-Token": "wrong"}),
+                json={
+                    "recipient_id": user.id,
+                    "type": "automation.job.failed",
+                    "title": "Job failed",
+                    "body": "detail",
+                },
+            )
+            assert response.status_code == 403
+
+    scenario(run)
+
+
+def test_internal_notification_requires_write_permission() -> None:
+    async def run() -> None:
+        app, _engine = await build_app(settings=make_settings(internal_token="svc-token-1"))
+        async with await api_client(app) as client:
+            response = await client.post(
+                "/api/v1/admin/internal/notifications",
+                headers=headers(token=READ_TOKEN, extra={"X-Internal-Token": "svc-token-1"}),
+                json={
+                    "recipient_id": "r-1",
+                    "type": "automation.job.failed",
+                    "title": "Job failed",
+                    "body": "detail",
+                },
+            )
+            assert response.status_code == 403
+
+    scenario(run)
+
+
+def test_internal_notification_without_configured_token() -> None:
+    """When INTERNAL_TOKEN is empty the header is not enforced (dev)."""
+
+    async def run() -> None:
+        app, _engine = await build_app(settings=make_settings(internal_token=""))
+        service = app.state.admin_service
+        user = await service.create_user(
+            subject="recipient",
+            email="recipient@example.com",
+            display_name="Recipient",
+            status="active",
+            roles=[],
+        )
+        async with await api_client(app) as client:
+            response = await client.post(
+                "/api/v1/admin/internal/notifications",
+                headers=headers(token=WRITE_TOKEN),
+                json={
+                    "recipient_id": user.id,
+                    "type": "automation.job.failed",
+                    "title": "Job failed",
+                    "body": "detail",
+                },
+            )
+            assert response.status_code == 201
 
     scenario(run)

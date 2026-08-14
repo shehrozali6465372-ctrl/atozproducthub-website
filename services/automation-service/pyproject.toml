@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "automation-service"
-version = "0.10.0"
-description = "Durable automation engine foundation — rules, scheduler, queue ledger, AI OS job correlation (M10)."
+version = "0.11.0"
+description = "Business automation engine — durable rules/runs, scheduler, queue ledger, executors, Celery worker/Beat (M10 Step 2)."
 requires-python = ">=3.11"
 dependencies = [
     "atoz-backend-core==0.4.0",
@@ -15,6 +15,7 @@ dependencies = [
     "alembic>=1.13,<2",
     "celery>=5.4,<6",
     "redis>=5.0,<6",
+    "croniter>=6.0,<7",
 ]
 
 [project.optional-dependencies]
@@ -24,6 +25,7 @@ dev = [
     "httpx>=0.27,<1",
     "ruff>=0.6,<1",
     "mypy>=1.10,<2",
+    "types-croniter>=6.0,<7",
 ]
 
 [tool.setuptools]

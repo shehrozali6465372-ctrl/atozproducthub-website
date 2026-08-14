@@ -13,6 +13,7 @@ one niche can never read or mutate another niche's automation state
 """
 
 from collections.abc import Sequence
+from datetime import datetime
 
 from sqlalchemy import func, select
 
@@ -153,6 +154,31 @@ class ScheduledJobRepository(SqlAlchemyRepository[ScheduledJob, str]):
         else:
             stmt = stmt.where(ScheduledJob.niche_id == niche_id)
         return (await self._session.scalars(stmt.limit(limit).offset(offset))).all()
+
+    async def list_due(self, now: datetime, *, limit: int = 200) -> Sequence[ScheduledJob]:
+        """Enabled jobs whose ``next_run_at`` has passed (single-scheduler tick).
+
+        Only jobs with an explicit schedule are due; jobs with a NULL
+        ``next_run_at`` never fire automatically (they require a manual
+        enqueue) so a misconfigured row can never create a runaway loop.
+
+        This is the **internal scheduler** path (not an API path): it scans
+        every scope so the single-scheduler Beat can enqueue due work for
+        all niches. Tenancy is preserved downstream — each enqueue resolves
+        the job through its own ``niche_id`` and every queue item carries
+        its niche scope for sibling calls.
+        """
+        stmt = (
+            select(ScheduledJob)
+            .where(
+                ScheduledJob.status == "enabled",
+                ScheduledJob.next_run_at.is_not(None),
+                ScheduledJob.next_run_at <= now,
+            )
+            .order_by(ScheduledJob.next_run_at)
+            .limit(limit)
+        )
+        return (await self._session.scalars(stmt)).all()
 
     async def count_scoped(self, niche_id: str | None) -> int:
         stmt = select(func.count(ScheduledJob.id))

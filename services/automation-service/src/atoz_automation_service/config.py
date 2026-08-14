@@ -1,9 +1,10 @@
-"""Service configuration for automation-service (M10 automation foundation).
+"""Service configuration for automation-service (M10 Step 2).
 
 Inherits the shared backend-core settings and adds the automation module
-tuning: JWT verification for the admin API, the durable queue retry policy
-(exponential backoff), the job-run retry bound, and the Celery broker/backend
-URLs (scaffold only — no tasks in the foundation).
+tuning: JWT verification for the admin API, sibling-service endpoints and
+secrets used by the executors (service-to-service JWT, Vault in
+production), the durable queue retry policy, executor timeouts, the Celery
+broker/backend URLs, and the default notification recipient.
 """
 
 from functools import lru_cache
@@ -31,9 +32,44 @@ class Settings(BaseServiceSettings):
     # Job-run retry bound (Platform job_runs carry their own attempts column).
     job_max_attempts: int = 5
 
-    # Celery scaffold (Step 2 wires executors): broker/backend from env.
+    # Celery scaffold + execution (M10 Step 2): broker/backend from env.
     celery_broker_url: str = "redis://localhost:6379/0"
     celery_backend_url: str = "redis://localhost:6379/0"
+
+    # Executor runtime limits.
+    executor_timeout_seconds: float = 300.0
+    beat_tick_interval_seconds: int = 60
+    beat_lock_ttl_seconds: int = 55
+
+    # Notifications: best-effort, at-most-once per outcome. When no
+    # recipient is configured the executor skips notifications entirely
+    # (routing per operator lands with the Authentication milestone).
+    default_notification_recipient_id: str | None = None
+    admin_base_url: str = "http://localhost:8700"
+    admin_jwt_secret: str = "dev-only-admin-jwt-secret-change-in-production"
+    admin_write_permission: str = "admin:write"
+    # Shared secret for the admin-service internal notification channel
+    # (``X-Internal-Token``); empty in dev = header not sent/enforced.
+    admin_internal_token: str = ""
+
+    # Sibling business services called by the executors (service-to-service
+    # JWT minted against each sibling's secret; production via Vault).
+    pinterest_base_url: str = "http://localhost:8400"
+    pinterest_jwt_secret: str = "dev-only-pinterest-jwt-secret-change-in-production"
+    pinterest_write_permission: str = "pinterest:write"
+    seo_base_url: str = "http://localhost:8500"
+    seo_jwt_secret: str = "dev-only-seo-jwt-secret-change-in-production"
+    seo_write_permission: str = "seo:write"
+    affiliate_base_url: str = "http://localhost:8300"
+    affiliate_jwt_secret: str = "dev-only-affiliate-jwt-secret-change-in-production"
+    affiliate_write_permission: str = "affiliate:write"
+    analytics_base_url: str = "http://localhost:8600"
+    analytics_jwt_secret: str = "dev-only-analytics-jwt-secret-change-in-production"
+    analytics_write_permission: str = "analytics:write"
+
+    # AI OS Bridge (the only AI OS contact point).
+    aios_bridge_base_url: str = "http://localhost:8100"
+    aios_bridge_internal_token: str = ""
 
 
 @lru_cache

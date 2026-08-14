@@ -6,6 +6,85 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-14
+
+### Added
+
+- Implemented M10 Automation Step 2 (business executors + production
+  execution) — ADR-0011 freezes the executor framework: a service-local
+  executor registry, short-lived service-to-service JWT for sibling API
+  calls, a Redis single-scheduler Beat lock, durable-ledger retries, and
+  best-effort notifications (no infinite notification retry).
+- `services/automation-service` v0.11.0:
+  - Executor framework: `Executor` interface + thread-safe
+    `ExecutorRegistry` (name-keyed with `by_queue` lookup), execution
+    context with timeout/cancellation, idempotency enforcement, and
+    per-executor success/failure handling.
+  - Business executors (thin orchestration over owning sibling services —
+    no duplicated business logic, no AI):
+    - `pinterest.publish_due` — publishes due queued Pins through
+      `services/pinterest-service` (niche-scoped claim + publish), safe
+      retry of transient failures.
+    - `seo.sitemap_rebuild` — triggers sitemap rebuild jobs and tracks
+      completion/failure.
+    - `affiliate.reconciliation` — triggers affiliate reconciliation and
+      records results.
+    - `analytics.rollup` — triggers scheduled report/rollup jobs and
+      tracks results.
+    - `aios.dispatch` — dispatches AI OS jobs through the AI OS Bridge
+      only (`services/aios-bridge`); no AI implementation inside
+      automation-service.
+  - Workflow engine: ledger claim → resolve → execute → persist/requeue/
+    terminal → notify; late-ack idempotent redelivery; timeout and
+    cancellation handling; job-start event published; scheduled-job
+    enqueue with optional override configuration payload.
+  - Real Celery wiring: `automation.run_executor` and
+    `automation.beat_tick` tasks (`acks_late`, bounded retries/backoff),
+    queue routing (`automation`/`celery`), 60-second `beat_schedule`, and
+    sync entry points with injected session/event bus for tests.
+  - Beat: DB-driven single-scheduler tick with Redis `SET NX EX` lock and
+    croniter UTC scheduling (`next_cron_run`), guarding against duplicate
+    periodic tasks in multi-scheduler production.
+  - Notifications: job started/succeeded/failed/retry-scheduled events
+    routed to the admin internal notification channel with delivery-state
+    tracking (best-effort, no infinite retry).
+  - Admin API additions under `/api/v1/admin`: executor catalog,
+    scheduled-job run-now (with optional config), detailed job-run view
+    (job_key + niche_slug), detailed queue ledger, queue-item retry/cancel,
+    and job-run retry.
+  - Tests: +44 automation-service tests (executors, workflow state
+    machine, beat locking/scheduling, Celery wiring, ops API, idempotent
+    redelivery, timeout/cancellation, retry-to-max, 10-niche isolation).
+- `services/pinterest-service`: `claim_due` / `publish_due` accept an
+  optional `niche_id` filter so automation can publish a single niche
+  (`POST /api/v1/admin/queue/publish-due?limit=&niche_id=`).
+- `services/aios-bridge`: new `POST /bridge/jobs` endpoint — maps the
+  business automation contract to the AI OS `job_type`, builds a frozen
+  `AIOS.Job.Request` (UUID `request_id`, internal callback URL), and
+  delegates to `AiosBridgeClient`; contract schemas + typed errors; no AI
+  logic in the bridge.
+- `services/admin-service`: internal notification channel
+  (`POST /api/v1/admin/internal/notifications`, service-account JWT +
+  optional internal token) for automation job events.
+- Frontend (apps/admin): `/automation` is now functional — Rules
+  (enable/disable), Scheduled jobs (run-now), Execution history
+  (retry/cancel), Queue ledger (retry/cancel), and Executor catalog, all
+  via the shared design system and real admin API client
+  (`AUTOMATION_API_BASE`) with mock fallback.
+- Infrastructure: Docker Compose adds `automation-worker` (Celery
+  `-Q automation,celery`, concurrency 2, max-tasks-per-child 200) and
+  `automation-beat` services.
+
+### Changed
+
+- `docs/architecture/14-implementation-roadmap.md`: Phase 12 status
+  updated — M10 complete (foundation + Step 2 business executors,
+  production Celery worker/Beat, notifications); remaining follow-ups are
+  production-time validations (30-day scheduler reliability, load).
+- `README.md`: automation section and roadmap status updated for M10
+  Step 2.
+- `docs/decisions/README.md`: ADR-0011 indexed.
+
 ## [0.10.0] - 2026-08-13
 
 ### Added

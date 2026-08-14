@@ -13,6 +13,7 @@ from atoz_automation_service.errors import (
     UnsupportedNicheError,
     ValidationError,
 )
+from atoz_automation_service.executors.registry import ExecutorRegistry
 from atoz_automation_service.services import AutomationService
 from atoz_backend_core.auth import TokenClaims, decode_token
 
@@ -23,6 +24,14 @@ def get_automation_service(request: Request) -> AutomationService:
     if service is None:
         raise ServiceUnavailableError("The automation database is not configured.")
     return service
+
+
+def get_executor_registry(request: Request) -> ExecutorRegistry:
+    """Resolve the executor registry wired at app startup (read-only)."""
+    registry = getattr(request.app.state, "executor_registry", None)
+    if registry is None:
+        raise ServiceUnavailableError("The executor registry is not configured.")
+    return registry
 
 
 def require_permission(permission: str):

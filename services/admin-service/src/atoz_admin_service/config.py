@@ -29,6 +29,11 @@ class Settings(BaseServiceSettings):
     # Dev default; producers must share the production value.
     event_webhook_secret: str = "dev-only-admin-event-secret-change-in-production"
 
+    # Shared secret for service-account internal endpoints (e.g. the
+    # automation-service notification delivery channel). Empty in dev =
+    # header not enforced; production sets a Vault-issued shared secret.
+    internal_token: str = ""
+
     # Operator session controls (API Contracts §4: MFA required for
     # privileged actions; sessions revocable).
     session_ttl_seconds: int = 3600

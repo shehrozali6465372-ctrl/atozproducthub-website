@@ -27,6 +27,7 @@ Blueprint, API Contracts, UI/UX Design System, Implementation Roadmap).
 - ADR-0008 — Analytics service owns the analytics database (`analytics_db`)
 - ADR-0009 — Admin service owns the admin & operations control plane (`admin_db`)
 - ADR-0010 — Automation service owns the automation database (`automation_db`); Platform queue/job tables stay admin-owned
+- ADR-0011 — Executor framework, service-to-service JWT, and single-scheduler Beat
 
 ## Template
 

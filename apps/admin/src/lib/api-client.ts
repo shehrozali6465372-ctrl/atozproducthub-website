@@ -26,6 +26,10 @@ import {
   SCHEDULED_JOBS,
   JOB_RUNS,
   OPS_NOTIFICATIONS,
+  MOCK_AUTOMATION_EXECUTORS,
+  MOCK_AUTOMATION_JOBS,
+  MOCK_AUTOMATION_QUEUE,
+  MOCK_AUTOMATION_RUNS,
   PAGE_TITLES,
   PIN_ACCOUNTS,
   PIN_QUEUE,
@@ -57,6 +61,65 @@ export interface Kpi {
   delta: string;
   trend: "up" | "down" | "flat";
   hint: string;
+}
+
+// ---------------------------------------------------- automation read models
+export interface AdminAutomationRule {
+  id: string;
+  nicheId: string | null;
+  code: string;
+  triggerType: string;
+  status: string;
+  runAsUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminScheduledJob {
+  id: string;
+  nicheId: string | null;
+  jobKey: string;
+  cronExpr: string;
+  queue: string;
+  handler: string;
+  status: string;
+  lastRunAt: string | null;
+  nextRunAt: string | null;
+}
+
+export interface AdminJobRunDetail {
+  id: string;
+  nicheId: string | null;
+  nicheSlug: string | null;
+  scheduledJobId: string;
+  jobKey: string;
+  runAt: string;
+  status: string;
+  attempts: number;
+  startedAt: string | null;
+  finishedAt: string | null;
+  outputRef: string | null;
+  error: string | null;
+}
+
+export interface AdminQueueItemDetail {
+  id: string;
+  nicheId: string | null;
+  nicheSlug: string | null;
+  queue: string;
+  payloadRef: string;
+  state: string;
+  attempts: number;
+  maxAttempts: number;
+  runAt: string;
+  completedAt: string | null;
+  error: string | null;
+}
+
+export interface AdminExecutor {
+  id: string;
+  name: string;
+  queue: string;
 }
 
 // ------------------------------------------------------------- CMS read models
@@ -174,7 +237,18 @@ export interface AdminApiClient {
     getPinQueue(): Promise<typeof PIN_QUEUE>;
   };
   automation: {
-    getRules(): Promise<typeof AUTOMATION_RULES>;
+    getRules(): Promise<AdminAutomationRule[]>;
+    enableRule(id: string): Promise<AdminAutomationRule>;
+    disableRule(id: string): Promise<AdminAutomationRule>;
+    getJobs(): Promise<AdminScheduledJob[]>;
+    runJob(id: string, config?: Record<string, unknown>): Promise<{ run: AdminJobRunDetail; queueItem: AdminQueueItemDetail }>;
+    getJobRuns(status?: string): Promise<AdminJobRunDetail[]>;
+    retryRun(id: string): Promise<{ run: AdminJobRunDetail; queueItem: AdminQueueItemDetail }>;
+    cancelRun(id: string): Promise<AdminJobRunDetail>;
+    getQueue(state?: string): Promise<AdminQueueItemDetail[]>;
+    retryQueueItem(id: string): Promise<AdminQueueItemDetail>;
+    cancelQueueItem(id: string): Promise<AdminQueueItemDetail>;
+    getExecutors(): Promise<AdminExecutor[]>;
   };
   content: {
     listNiches(): Promise<AdminNiche[]>;
@@ -762,6 +836,95 @@ const mockAdminApiClient: AdminApiClient = {
   },
   automation: {
     getRules: () => delay(AUTOMATION_RULES),
+    enableRule: (id: string) => {
+      const rule = AUTOMATION_RULES.find((r) => r.id === id);
+      if (!rule) return Promise.reject(new Error("Rule not found"));
+      return delay({ ...rule, status: "enabled" });
+    },
+    disableRule: (id: string) => {
+      const rule = AUTOMATION_RULES.find((r) => r.id === id);
+      if (!rule) return Promise.reject(new Error("Rule not found"));
+      return delay({ ...rule, status: "disabled" });
+    },
+    getJobs: () => delay(MOCK_AUTOMATION_JOBS),
+    runJob: (id: string, _config?: Record<string, unknown>) => {
+      const job = MOCK_AUTOMATION_JOBS.find((j) => j.id === id);
+      if (!job) return Promise.reject(new Error("Job not found"));
+      return delay({
+        run: {
+          id: `run-${Date.now()}`,
+          nicheId: job.nicheId,
+          nicheSlug: null,
+          scheduledJobId: job.id,
+          jobKey: job.jobKey,
+          runAt: new Date().toISOString(),
+          status: "pending",
+          attempts: 0,
+          startedAt: null,
+          finishedAt: null,
+          outputRef: null,
+          error: null,
+        },
+        queueItem: {
+          id: `q-${Date.now()}`,
+          nicheId: job.nicheId,
+          nicheSlug: null,
+          queue: job.queue,
+          payloadRef: "job_run:new",
+          state: "queued",
+          attempts: 0,
+          maxAttempts: 5,
+          runAt: new Date().toISOString(),
+          completedAt: null,
+          error: null,
+        },
+      });
+    },
+    getJobRuns: (status?: string) => {
+      const rows = status ? MOCK_AUTOMATION_RUNS.filter((run) => run.status === status) : MOCK_AUTOMATION_RUNS;
+      return delay(rows);
+    },
+    retryRun: (id: string) => {
+      const run = MOCK_AUTOMATION_RUNS.find((r) => r.id === id);
+      if (!run) return Promise.reject(new Error("Run not found"));
+      const job = MOCK_AUTOMATION_JOBS.find((j) => j.id === run.scheduledJobId);
+      return delay({
+        run: { ...run, id: `run-${Date.now()}`, status: "pending", attempts: 0, startedAt: null, finishedAt: null, error: null },
+        queueItem: {
+          id: `q-${Date.now()}`,
+          nicheId: run.nicheId,
+          nicheSlug: run.nicheSlug,
+          queue: job?.queue ?? "default",
+          payloadRef: "job_run:new",
+          state: "queued",
+          attempts: 0,
+          maxAttempts: 5,
+          runAt: new Date().toISOString(),
+          completedAt: null,
+          error: null,
+        },
+      });
+    },
+    cancelRun: (id: string) => {
+      const run = MOCK_AUTOMATION_RUNS.find((r) => r.id === id);
+      if (!run) return Promise.reject(new Error("Run not found"));
+      return delay({ ...run, status: "cancelled", finishedAt: new Date().toISOString() });
+    },
+    getQueue: (state?: string) => {
+      const rows = state ? MOCK_AUTOMATION_QUEUE.filter((item) => item.state === state) : MOCK_AUTOMATION_QUEUE;
+      return delay(rows);
+    },
+    retryQueueItem: (id: string) => {
+      const item = MOCK_AUTOMATION_QUEUE.find((entry) => entry.id === id);
+      if (!item) return Promise.reject(new Error("Queue item not found"));
+      return delay({ ...item, state: "queued", completedAt: null, error: null });
+    },
+    cancelQueueItem: (id: string) => {
+      const item = MOCK_AUTOMATION_QUEUE.find((entry) => entry.id === id);
+      if (!item) return Promise.reject(new Error("Queue item not found"));
+      return delay({ ...item, state: "failed", completedAt: new Date().toISOString(), error: "cancelled by operator" });
+    },
+    getExecutors: () => delay(MOCK_AUTOMATION_EXECUTORS),
   },
   content: mockContentClient,
   affiliate: mockAffiliateClient,
@@ -1864,18 +2027,201 @@ const liveOpsClient = {
     ),
 };
 
+// ------------------------------------------------------- live automation client
+const AUTOMATION_API_BASE = process.env.NEXT_PUBLIC_AUTOMATION_API_BASE_URL ?? "";
+
+function automationFetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  return fetch(`${AUTOMATION_API_BASE}${path}`, {
+    ...init,
+    headers: { ...liveHeaders(), ...(init?.body ? { "Content-Type": "application/json" } : {}), ...init?.headers },
+  }).then(async (response) => {
+    if (!response.ok) {
+      throw new Error(`Automation API request failed: ${response.status} ${response.statusText}`);
+    }
+    return (await response.json()) as T;
+  });
+}
+
+interface LiveAutomationRuleDto {
+  id: string;
+  niche_id: string | null;
+  code: string;
+  trigger_type: string;
+  status: string;
+  run_as_user_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface LiveScheduledJobDto {
+  id: string;
+  niche_id: string | null;
+  job_key: string;
+  cron_expr: string;
+  queue: string;
+  handler: string;
+  status: string;
+  last_run_at: string | null;
+  next_run_at: string | null;
+}
+
+interface LiveJobRunDetailDto {
+  id: string;
+  niche_id: string | null;
+  niche_slug: string | null;
+  scheduled_job_id: string;
+  job_key: string;
+  run_at: string;
+  status: string;
+  attempts: number;
+  started_at: string | null;
+  finished_at: string | null;
+  output_ref: string | null;
+  error: string | null;
+}
+
+interface LiveQueueItemDetailDto {
+  id: string;
+  niche_id: string | null;
+  niche_slug: string | null;
+  queue: string;
+  payload_ref: string;
+  state: string;
+  attempts: number;
+  max_attempts: number;
+  run_at: string;
+  completed_at: string | null;
+  error: string | null;
+}
+
+interface LiveExecutorDto {
+  name: string;
+  queue: string;
+}
+
+function toExecutor(dto: LiveExecutorDto): AdminExecutor {
+  return { id: dto.name, name: dto.name, queue: dto.queue };
+}
+
+function toAutomationRule(dto: LiveAutomationRuleDto): AdminAutomationRule {
+  return {
+    id: dto.id,
+    nicheId: dto.niche_id,
+    code: dto.code,
+    triggerType: dto.trigger_type,
+    status: dto.status,
+    runAsUserId: dto.run_as_user_id,
+    createdAt: dto.created_at,
+    updatedAt: dto.updated_at,
+  };
+}
+
+function toAutomationJob(dto: LiveScheduledJobDto): AdminScheduledJob {
+  return {
+    id: dto.id,
+    nicheId: dto.niche_id,
+    jobKey: dto.job_key,
+    cronExpr: dto.cron_expr,
+    queue: dto.queue,
+    handler: dto.handler,
+    status: dto.status,
+    lastRunAt: dto.last_run_at,
+    nextRunAt: dto.next_run_at,
+  };
+}
+
+function toJobRunDetail(dto: LiveJobRunDetailDto): AdminJobRunDetail {
+  return {
+    id: dto.id,
+    nicheId: dto.niche_id,
+    nicheSlug: dto.niche_slug,
+    scheduledJobId: dto.scheduled_job_id,
+    jobKey: dto.job_key,
+    runAt: dto.run_at,
+    status: dto.status,
+    attempts: dto.attempts,
+    startedAt: dto.started_at,
+    finishedAt: dto.finished_at,
+    outputRef: dto.output_ref,
+    error: dto.error,
+  };
+}
+
+function toQueueItemDetail(dto: LiveQueueItemDetailDto): AdminQueueItemDetail {
+  return {
+    id: dto.id,
+    nicheId: dto.niche_id,
+    nicheSlug: dto.niche_slug,
+    queue: dto.queue,
+    payloadRef: dto.payload_ref,
+    state: dto.state,
+    attempts: dto.attempts,
+    maxAttempts: dto.max_attempts,
+    runAt: dto.run_at,
+    completedAt: dto.completed_at,
+    error: dto.error,
+  };
+}
+
+interface LiveRunEnvelopeDto {
+  run: LiveJobRunDetailDto;
+  queue_item: LiveQueueItemDetailDto;
+}
+
+function toRunEnvelope(dto: LiveRunEnvelopeDto): { run: AdminJobRunDetail; queueItem: AdminQueueItemDetail } {
+  return { run: toJobRunDetail(dto.run), queueItem: toQueueItemDetail(dto.queue_item) };
+}
+
+const liveAutomationClient = {
+  getRules: () => automationFetchJson<LiveAutomationRuleDto[]>("/api/v1/admin/rules").then((rows) => rows.map(toAutomationRule)),
+  enableRule: (id: string) =>
+    automationFetchJson<LiveAutomationRuleDto>(`/api/v1/admin/rules/${id}/enable`, { method: "POST" }).then(toAutomationRule),
+  disableRule: (id: string) =>
+    automationFetchJson<LiveAutomationRuleDto>(`/api/v1/admin/rules/${id}/disable`, { method: "POST" }).then(toAutomationRule),
+  getJobs: () => automationFetchJson<LiveScheduledJobDto[]>("/api/v1/admin/scheduled-jobs").then((rows) => rows.map(toAutomationJob)),
+  runJob: (id: string, config?: Record<string, unknown>) =>
+    automationFetchJson<LiveRunEnvelopeDto>(`/api/v1/admin/scheduled-jobs/${id}/enqueue`, {
+      method: "POST",
+      body: JSON.stringify({ config: config ?? {} }),
+    }).then(toRunEnvelope),
+  getJobRuns: (status?: string) => {
+    const query = new URLSearchParams();
+    if (status) query.set("status", status);
+    return automationFetchJson<LiveJobRunDetailDto[]>(`/api/v1/admin/jobs/runs?${query.toString()}`).then((rows) =>
+      rows.map(toJobRunDetail),
+    );
+  },
+  retryRun: (id: string) =>
+    automationFetchJson<LiveRunEnvelopeDto>(`/api/v1/admin/job-runs/${id}/retry`, { method: "POST" }).then(toRunEnvelope),
+  cancelRun: (id: string) =>
+    automationFetchJson<LiveJobRunDetailDto>(`/api/v1/admin/job-runs/${id}/cancel`, { method: "POST" }).then(toJobRunDetail),
+  getQueue: (state?: string) => {
+    const query = new URLSearchParams();
+    if (state) query.set("state", state);
+    return automationFetchJson<LiveQueueItemDetailDto[]>(`/api/v1/admin/queue/detailed?${query.toString()}`).then((rows) =>
+      rows.map(toQueueItemDetail),
+    );
+  },
+  retryQueueItem: (id: string) =>
+    automationFetchJson<LiveQueueItemDetailDto>(`/api/v1/admin/queue/${id}/retry`, { method: "POST" }).then(toQueueItemDetail),
+  cancelQueueItem: (id: string) =>
+    automationFetchJson<LiveQueueItemDetailDto>(`/api/v1/admin/queue/${id}/cancel`, { method: "POST" }).then(toQueueItemDetail),
+  getExecutors: () =>
+    automationFetchJson<LiveExecutorDto[]>("/api/v1/admin/executors").then((rows) => rows.map(toExecutor)),
+};
+
 const liveAdminApiClient: AdminApiClient = {
   dashboard: mockAdminApiClient.dashboard,
   analytics: liveAnalyticsClient,
   pinterest: mockAdminApiClient.pinterest,
-  automation: mockAdminApiClient.automation,
+  automation: liveAutomationClient,
   content: liveContentClient,
   affiliate: liveAffiliateClient,
   ops: liveOpsClient,
 };
 
 export function createAdminApiClient(): AdminApiClient {
-  return CONTENT_API_BASE || AFFILIATE_API_BASE || ANALYTICS_API_BASE || ADMIN_API_BASE
+  return CONTENT_API_BASE || AFFILIATE_API_BASE || ANALYTICS_API_BASE || ADMIN_API_BASE || AUTOMATION_API_BASE
     ? liveAdminApiClient
     : mockAdminApiClient;
 }

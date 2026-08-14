@@ -174,6 +174,58 @@ def test_sync_boards_and_publish_pin_lifecycle() -> None:
     scenario(runner)
 
 
+def test_publish_due_can_scope_to_one_niche() -> None:
+    """Automation executor scoping: publish_due(niche_id=...) touches only that niche."""
+
+    async def runner() -> None:
+        transport = MockPinterestTransport()
+        transport.boards = [{"id": "b-1", "name": "Buys"}]
+        _session_factory, service = await build_repositories(transport=transport)
+        niche_a = await service.create_niche(name="Kitchen", slug="kitchen", status="active")
+        niche_b = await service.create_niche(name="Travel", slug="travel", status="active")
+        account_a = await _connected_account(service, transport, niche_id=niche_a.id, name="hub-a")
+        account_b = await _connected_account(service, transport, niche_id=niche_b.id, name="hub-b")
+        board_a = (await service.sync_boards(account_a.id, niche_id=niche_a.id))[0]
+        board_b = (await service.sync_boards(account_b.id, niche_id=niche_b.id))[0]
+
+        pin_a = await service.create_pin_draft(
+            niche_id=niche_a.id,
+            account_id=account_a.id,
+            board_id=board_a.id,
+            title="Kitchen pin",
+            destination_url="https://atozproducthub.dev/kitchen",
+            media_ref="https://media.example/a.jpg",
+            description="a",
+        )
+        pin_b = await service.create_pin_draft(
+            niche_id=niche_b.id,
+            account_id=account_b.id,
+            board_id=board_b.id,
+            title="Travel pin",
+            destination_url="https://atozproducthub.dev/travel",
+            media_ref="https://media.example/b.jpg",
+            description="b",
+        )
+        await service.enqueue_pin(pin_a.id, niche_id=niche_a.id, account_id=account_a.id)
+        await service.enqueue_pin(pin_b.id, niche_id=niche_b.id, account_id=account_b.id)
+
+        # Niche-scoped worker run: only niche A work is claimed/published.
+        outcomes = await service.publish_due(niche_id=niche_a.id)
+        assert outcomes == [{"pin_id": pin_a.id, "status": "published", "remote_pin_id": "p-1"}]
+
+        async with service._uow_factory().transaction() as unit:  # noqa: SLF001
+            stored_a = await unit.pins.get_scoped(
+                pin_a.id, niche_id=niche_a.id, account_id=account_a.id
+            )
+            stored_b = await unit.pins.get_scoped(
+                pin_b.id, niche_id=niche_b.id, account_id=account_b.id
+            )
+            assert stored_a.status == "published"
+            assert stored_b.status == "queued"  # untouched by the scoped run
+
+    scenario(runner)
+
+
 def test_publish_retryable_failure_keeps_queue_for_later() -> None:
     async def runner() -> None:
         transport = MockPinterestTransport()

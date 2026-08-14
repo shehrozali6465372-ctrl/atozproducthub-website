@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from atoz_automation_service import __version__
 from atoz_automation_service.config import Settings, get_settings
 from atoz_automation_service.errors import register_exception_handlers
+from atoz_automation_service.executors import build_default_registry
 from atoz_automation_service.repositories import AutomationUnitOfWork
 from atoz_automation_service.routes import admin_router
 from atoz_automation_service.services import AutomationService
@@ -63,6 +64,7 @@ def create_app(
     app.state.automation_service = build_automation_service(
         settings, session_factory=session_factory, event_bus=event_bus
     )
+    app.state.executor_registry = build_default_registry()
     register_exception_handlers(app)
     return app
 

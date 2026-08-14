@@ -661,14 +661,20 @@ class PinterestService:
             pin.status = PinStatus.CANCELLED.value
             return pin
 
-    async def publish_due(self, *, limit: int = 10) -> list[dict[str, str]]:
+    async def publish_due(
+        self, *, limit: int = 10, niche_id: str | None = None
+    ) -> list[dict[str, str]]:
         """Worker entry point: claim due queue items and publish them.
 
+        ``niche_id`` optionally scopes the run to one niche (automation
+        executor); otherwise it claims across accounts (M6 behavior).
         Returns a summary of outcomes (idempotent-safe, per-account limits).
         """
         async with self._uow_factory().transaction() as unit:
             items = await unit.queue.claim_due(
-                limit=limit, batch_size=self._settings.queue_batch_size
+                limit=limit,
+                batch_size=self._settings.queue_batch_size,
+                niche_id=niche_id,
             )
             snapshot = [
                 (item.id, item.pinterest_pin_id, item.pinterest_account_id, item.niche_id)

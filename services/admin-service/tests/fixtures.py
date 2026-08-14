@@ -121,11 +121,18 @@ def scenario(runner: Callable[[], Coroutine[Any, Any, None]]) -> None:
     asyncio.run(runner())
 
 
-def headers(*, token: str | None = None, niche: str | None = None) -> dict[str, str]:
+def headers(
+    *,
+    token: str | None = None,
+    niche: str | None = None,
+    extra: dict[str, str] | None = None,
+) -> dict[str, str]:
     """Build auth + tenancy headers for admin API calls."""
     result: dict[str, str] = {}
     if token:
         result["Authorization"] = f"Bearer {token}"
     if niche:
         result["X-Niche-Id"] = niche
+    if extra:
+        result.update(extra)
     return result

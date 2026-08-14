@@ -111,6 +111,62 @@ class QueueEnqueueIn(BaseModel):
     max_attempts: int | None = Field(default=None, ge=1, le=50)
 
 
+class RunJobRequest(BaseModel):
+    """Optional per-execution config for a manual scheduled-job run.
+
+    The override is stored on the queue item and never merged into the
+    scheduled job definition (frozen ``config_json`` stays intact).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    config: dict[str, Any] = Field(default_factory=dict)
+
+
+class JobRunDetailOut(BaseModel):
+    """Job run with the owning job key + niche slug (admin dashboard)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    id: str
+    niche_id: str | None
+    niche_slug: str | None
+    scheduled_job_id: str
+    job_key: str
+    run_at: datetime
+    status: str
+    attempts: int
+    started_at: datetime | None
+    finished_at: datetime | None
+    output_ref: str | None
+    error: str | None
+
+
+class QueueItemDetailOut(BaseModel):
+    """Queue ledger row with the niche slug (admin dashboard)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    id: str
+    niche_id: str | None
+    niche_slug: str | None
+    queue: str
+    payload_ref: str
+    state: str
+    attempts: int
+    max_attempts: int
+    run_at: datetime
+    completed_at: datetime | None
+    error: str | None
+
+
+class ExecutorOut(BaseModel):
+    """Registered executor descriptor (read-only, no business payload)."""
+
+    name: str
+    queue: str
+
+
 class AiosJobCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

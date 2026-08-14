@@ -90,6 +90,12 @@ async def build_app(
         await bus.subscribe("automation:job-enqueued.v1", capture)
         await bus.subscribe("automation:job-queued.v1", capture)
         await bus.subscribe("automation:aios-job-created.v1", capture)
+        await bus.subscribe("automation:job-started.v1", capture)
+        await bus.subscribe("automation:job-succeeded.v1", capture)
+        await bus.subscribe("automation:job-failed.v1", capture)
+        await bus.subscribe("automation:job-retry-scheduled.v1", capture)
+        await bus.subscribe("automation:aios-job-succeeded.v1", capture)
+        await bus.subscribe("automation:aios-job-failed.v1", capture)
 
     app = create_app(
         settings=settings or make_settings(), session_factory=session_factory, event_bus=bus
@@ -124,6 +130,12 @@ async def build_service(
         "automation:job-enqueued.v1",
         "automation:job-queued.v1",
         "automation:aios-job-created.v1",
+        "automation:job-started.v1",
+        "automation:job-succeeded.v1",
+        "automation:job-failed.v1",
+        "automation:job-retry-scheduled.v1",
+        "automation:aios-job-succeeded.v1",
+        "automation:aios-job-failed.v1",
     ):
         await bus.subscribe(event_type, capture)
     publisher = EventPublisher(bus, publisher="automation-service")

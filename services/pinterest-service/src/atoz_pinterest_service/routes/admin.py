@@ -289,10 +289,12 @@ async def list_queue(
 
 @router.post("/queue/publish-due", summary="Run the queue worker (claim + publish due pins)")
 async def publish_due(
+    limit: int = Query(default=10, ge=1, le=100),
+    niche_id: str | None = Query(default=None, max_length=36),
     _claims: TokenClaims = Depends(WRITE),
     service: PinterestService = Depends(get_pinterest_service),
 ):
-    return await service.publish_due()
+    return await service.publish_due(limit=limit, niche_id=niche_id)
 
 
 # -------------------------------------------------------------- analytics

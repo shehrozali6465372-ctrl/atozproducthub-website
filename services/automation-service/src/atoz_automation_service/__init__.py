@@ -1,3 +1,3 @@
-"""Durable automation engine foundation — M10 (v0.10.0)."""
+"""Business automation engine — M10 Step 2 (v0.11.0)."""
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"

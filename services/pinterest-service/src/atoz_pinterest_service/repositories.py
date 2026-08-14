@@ -330,17 +330,25 @@ class PinQueueRepository(SqlAlchemyRepository[PinQueueItem, str]):
             stmt = stmt.where(PinQueueItem.state == state)
         return (await self._session.scalars(stmt)).all()
 
-    async def claim_due(self, *, limit: int, batch_size: int = 10) -> Sequence[PinQueueItem]:
-        """Claim due queue items for a worker run (across accounts)."""
+    async def claim_due(
+        self, *, limit: int, batch_size: int = 10, niche_id: str | None = None
+    ) -> Sequence[PinQueueItem]:
+        """Claim due queue items for a worker run (optionally one niche).
+
+        The automation executor may scope a run to one niche (``niche_id``
+        filter); when omitted the worker claims across accounts (M6
+        behavior). Per-account rate limits remain enforced in the service
+        layer, never by a single global limiter.
+        """
         now = _utcnow()
+        stmt = select(PinQueueItem).where(
+            PinQueueItem.state == "queued",
+            PinQueueItem.run_at <= now,
+        )
+        if niche_id is not None:
+            stmt = stmt.where(PinQueueItem.niche_id == niche_id)
         result = await self._session.scalars(
-            select(PinQueueItem)
-            .where(
-                PinQueueItem.state == "queued",
-                PinQueueItem.run_at <= now,
-            )
-            .order_by(PinQueueItem.run_at)
-            .limit(min(limit, batch_size))
+            stmt.order_by(PinQueueItem.run_at).limit(min(limit, batch_size))
         )
         items = result.all()
         for item in items:
