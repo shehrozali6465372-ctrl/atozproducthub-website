@@ -42,6 +42,7 @@ x-app-hardening: &app-hardening
       limits:
         cpus: "0.5"
         memory: 512M
+        pids: 256
 
 services:
   proxy:
