@@ -343,6 +343,11 @@ jobs:
           TYPESENSE_API_KEY: ci-only
           PINTEREST_OAUTH_CLIENT_ID: ci-only
           PINTEREST_OAUTH_STATE_SECRET: ci-only
+          REDIS_PASSWORD: ci-only
+          CLICKHOUSE_USER: atoz
+          CLICKHOUSE_PASSWORD: ci-only
+          KAFKA_SASL_USERNAME: atoz
+          KAFKA_SASL_PASSWORD: ci-only
         run: docker compose -f infra/docker/compose.prod.yml config -q
       - name: Compose up
         run: docker compose -f infra/docker/compose.yml up -d --build
