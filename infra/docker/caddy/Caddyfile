@@ -1,0 +1,57 @@
+# AtozProductHub production edge — TLS termination + security headers.
+# Only the API is live in the containerized stack (M11 Phase B); the
+# frontend track is CDN-first (08-deployment-strategy.md §2) and the admin
+# app is deployed as an application-track component in Phase F (deployment).
+# The commented site/admin blocks are the Phase F wiring points.
+
+{$API_DOMAIN} {
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"
+		Server ""
+	}
+
+	handle /healthz {
+		respond 204
+	}
+
+	handle {
+		reverse_proxy {$API_UPSTREAM}
+	}
+}
+
+# Phase F wiring points (frontend containers land in the deployment phase):
+#
+# {$SITE_DOMAIN} {
+# 	encode gzip zstd
+# 	header {
+# 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+# 		X-Content-Type-Options "nosniff"
+# 		X-Frame-Options "DENY"
+# 		Referrer-Policy "strict-origin-when-cross-origin"
+# 		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"
+# 		Server ""
+# 	}
+# 	handle /healthz { respond 204 }
+# 	handle { reverse_proxy web:3000 }
+# }
+#
+# {$ADMIN_DOMAIN} {
+# 	encode gzip zstd
+# 	header {
+# 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+# 		X-Content-Type-Options "nosniff"
+# 		X-Frame-Options "DENY"
+# 		Referrer-Policy "strict-origin-when-cross-origin"
+# 		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"
+# 		Server ""
+# 	}
+# 	handle /healthz { respond 204 }
+# 	handle { reverse_proxy admin-web:3001 }
+# }

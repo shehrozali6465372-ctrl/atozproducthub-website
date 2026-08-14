@@ -26,8 +26,20 @@ def test_env_override(monkeypatch) -> None:
 
 def test_production_flag() -> None:
     assert Settings(_env_file=None).is_production is False
-    settings = Settings(_env_file=None, app_env="prod")
+    settings = Settings(
+        _env_file=None,
+        app_env="prod",
+        jwt_secret="prod-issued-jwt-secret-0123456789abcdef0123456789abcdef",
+        auth_dev_subject="prod-admin",
+        auth_dev_password_hash="not-a-dev-hash",
+    )
     assert settings.is_production is True
+
+
+def test_production_rejects_dev_default_jwt_secret() -> None:
+    """M11 hardening: prod must not boot with the dev-only JWT default."""
+    with pytest.raises(ValidationError, match="dev-only"):
+        Settings(_env_file=None, app_env="prod")
 
 
 def test_invalid_env_rejected(monkeypatch) -> None:

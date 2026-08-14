@@ -13,6 +13,13 @@ COPY services/content-service /srv/services/content-service
 RUN pip install --no-cache-dir /srv/libs/backend-core \
     && pip install --no-cache-dir /srv/services/content-service
 
+# Run as a non-root user (M11 production hardening: least privilege).
+RUN addgroup --system appuser && adduser --system --ingroup appuser appuser \
+    && mkdir -p /data/content \
+    && chown -R appuser:appuser /srv /data
+
+USER appuser
+
 EXPOSE 8000
 
 CMD ["uvicorn", "atoz_content_service.main:app", "--host", "0.0.0.0", "--port", "8000"]

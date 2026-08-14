@@ -6,6 +6,62 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-08-14
+
+### Added
+
+- Implemented M11 Production Foundation Phase A + Phase B (production
+  audit + infrastructure hardening) — ADR-0012 freezes the hardening
+  decisions: non-root images, read-only root filesystems, resource limits,
+  trust-zone network isolation, a Caddy TLS edge, and a fail-fast
+  production secrets guard.
+- `libs/backend-core` v0.12.0: `BaseServiceSettings` now rejects any
+  string containing `dev-only-`, `dev-admin`, or `CHANGE_ME` when
+  `APP_ENV=prod` (validated recursively through dict/list/tuple fields).
+  Dev defaults can no longer reach a live deployment; unit tests cover the
+  guard. All service and gateway packages pinned to `atoz-backend-core==0.12.0`.
+- `infra/docker/compose.prod.yml`: production deployment profile —
+  hardened first-party services (non-root, `read_only: true`, tmpfs
+  `/tmp`, `mem_limit`/`cpus`/`pids_limit` + `deploy.resources`), liveness
+  `/health` + readiness `/ready` probes (readiness verifies Postgres/Redis),
+  trust-zone networks (`edge`/`app`/`data` internal/`integration`), stores
+  with no host ports, and zero literal secrets (`${VAR:?...}` fail-fast
+  interpolation).
+- `infra/docker/caddy/Caddyfile`: Caddy 2 TLS edge — automatic Let's
+  Encrypt, HSTS preload, CSP, nosniff/frame/referrer/permissions policies,
+  gzip/zstd, `Server` stripping, `/healthz`, and an API route
+  (`https://api.<domain>` → gateway). Frontend wiring points commented for
+  Phase F (CDN-first track).
+- Non-root hardening: all 10 first-party images (`infra/docker/api.Dockerfile`
+  + `services/*/Dockerfile`) run as `USER appuser`; content-service
+  pre-creates `/data/content` owned by the app user.
+- `tools/dev/check-infra.sh`: static infrastructure hardening guard
+  (non-root images, prod-compose hardening, network isolation, no host
+  ports on services/stores, no `dev-only-`/`CHANGE_ME` literals in the prod
+  profile, required interpolation variables documented in
+  `config/prod/env.template`, Caddyfile present).
+- `config/prod/env.template`: rewritten to document every production
+  variable (secrets marked Vault-sourced); the infra guard enforces that
+  every `${VAR:?...}` in the prod compose is documented.
+- CI: quality job runs the infrastructure guard; docker job validates the
+  production compose profile with `docker compose config -q` (all required
+  variables exported) and continues to smoke-test the dev compose on the
+  hardened images.
+- Documentation: `docs/operations/001-production-audit.md` (Phase A audit
+  findings A1–A11 with severities and remediation status),
+  `docs/operations/002-production-infrastructure.md` (Phase B guide),
+  ADR-0012 (indexed in `docs/decisions/README.md`), and
+  `infra/docker/README.md` updated for both profiles.
+
+### Changed
+
+- `docs/architecture/14-implementation-roadmap.md`: Phase 13 / M8
+  (Production) DoD progress marked for security + infrastructure
+  hardening (v0.12.0); remaining follow-ups are observability, backup/DR,
+  and deployment workflows (Phases D–F).
+- `README.md`: roadmap status line and infrastructure notes updated for
+  M11 Phase 1 (audit + hardening).
+
 ## [0.11.0] - 2026-08-14
 
 ### Added

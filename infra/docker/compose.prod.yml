@@ -1,0 +1,457 @@
+name: atozproducthub-prod
+
+# Production deployment profile (M11 Phase B — infra hardening, ADR-0012).
+#
+# Hardening rules enforced here (and by tools/dev/check-infra.sh in CI):
+#   * No host port exposure except the Caddy edge (80/443).
+#   * Every first-party service runs non-root (USER appuser in the image),
+#     read-only root filesystem, tmpfs /tmp, and bounded CPU/memory/pids.
+#   * Network isolation by trust zone (docs/architecture/07-security-boundaries.md):
+#       edge        -> Caddy only (TLS termination)
+#       app         -> first-party services (inter-service calls)
+#       data        -> stores only (internal: no outbound)
+#       integration -> AI OS Bridge egress to the AI OS
+#   * Secrets are never hardcoded; every credential is an interpolation
+#     variable that the deployment pipeline injects from the Vault. Missing
+#     variables fail `docker compose config` (fail-fast, no silent defaults).
+#   * Compose healthchecks hit /ready, which verifies Postgres/Redis, so
+#     dependencies are actually checked before a container is healthy;
+#     /health remains the orchestrator liveness endpoint.
+#
+# Usage:
+#   export $(cat config/prod/env.template | xargs)   # non-secret defaults
+#   docker compose -f infra/docker/compose.prod.yml config -q   # validate
+#   docker compose -f infra/docker/compose.prod.yml up -d       # deploy
+
+x-app-healthcheck: &app-healthcheck
+  test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')"]
+  interval: 15s
+  timeout: 3s
+  retries: 5
+  start_period: 20s
+
+x-app-hardening: &app-hardening
+  read_only: true
+  tmpfs: ["/tmp"]
+  mem_limit: 512m
+  mem_reservation: 256m
+  cpus: "0.5"
+  pids_limit: 256
+  restart: unless-stopped
+  deploy:
+    resources:
+      limits:
+        cpus: "0.5"
+        memory: 512M
+      reservations:
+        cpus: "0.1"
+        memory: 128M
+
+services:
+  proxy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:-atozproducthub.dev}
+      API_DOMAIN: ${API_DOMAIN:-api.atozproducthub.dev}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN:-admin.atozproducthub.dev}
+      API_UPSTREAM: api:8000
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge
+      - app
+    depends_on:
+      - api
+    read_only: true
+    tmpfs: ["/tmp"]
+    mem_limit: 128m
+    pids_limit: 128
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/healthz"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/docker/api.Dockerfile
+    environment:
+      APP_ENV: prod
+      APP_LOG_LEVEL: ${APP_LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${GATEWAY_JWT_SECRET:?GATEWAY_JWT_SECRET required}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["https://atozproducthub.dev","https://www.atozproducthub.dev"]}
+      # Dev identity placeholder is disabled in prod (auth routes return 501);
+      # override the dev-only default so the prod secrets guard passes.
+      AUTH_DEV_SUBJECT: disabled-in-prod
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
+      OTEL_EXPORTER_ENDPOINT: ${OTEL_EXPORTER_ENDPOINT:-http://otel-collector:4318/v1/traces}
+    networks:
+      - app
+      - data
+    healthcheck: *app-healthcheck
+    <<: *app-hardening
+
+  aios-bridge:
+    build:
+      context: ../..
+      dockerfile: services/aios-bridge/Dockerfile
+    environment:
+      APP_ENV: prod
+      AIOS_BASE_URL: ${AIOS_BASE_URL:?AIOS_BASE_URL required}
+      AIOS_API_KEY: ${AIOS_API_KEY:?AIOS_API_KEY required}
+      AIOS_CALLBACK_URL: ${AIOS_CALLBACK_URL:-http://aios-bridge:8000/bridge/jobs/status}
+      INTERNAL_TOKEN: ${AIOS_BRIDGE_INTERNAL_TOKEN:?AIOS_BRIDGE_INTERNAL_TOKEN required}
+      AIOS_CONTRACTS_DIR: /srv/libs/contracts/aios
+    networks:
+      - app
+      - integration
+    healthcheck: *app-healthcheck
+    <<: *app-hardening
+
+  content-service:
+    build:
+      context: ../..
+      dockerfile: services/content-service/Dockerfile
+    environment:
+      APP_ENV: prod
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${CONTENT_JWT_SECRET:?CONTENT_JWT_SECRET required}
+      CONTENT_STORAGE_DIR: /data/content
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://atozproducthub.dev}
+    volumes:
+      - content_data:/data
+    networks:
+      - app
+      - data
+    healthcheck: *app-healthcheck
+    <<: *app-hardening
+
+  affiliate-service:
+    build:
+      context: ../..
+      dockerfile: services/affiliate-service/Dockerfile
+    environment:
+      APP_ENV: prod
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${AFFILIATE_JWT_SECRET:?AFFILIATE_JWT_SECRET required}
+      TOKEN_SIGNING_SECRET: ${AFFILIATE_TOKEN_SIGNING_SECRET:?AFFILIATE_TOKEN_SIGNING_SECRET required}
+      WEBHOOK_SECRETS: ${AFFILIATE_WEBHOOK_SECRETS:-{}}
+    networks:
+      - app
+      - data
+    healthcheck: *app-healthcheck
+    <<: *app-hardening
+
+  pinterest-service:
+    build:
+      context: ../..
+      dockerfile: services/pinterest-service/Dockerfile
+    environment:
+      APP_ENV: prod
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${PINTEREST_JWT_SECRET:?PINTEREST_JWT_SECRET required}
+      OAUTH_CLIENT_ID: ${PINTEREST_OAUTH_CLIENT_ID:?PINTEREST_OAUTH_CLIENT_ID required}
+      OAUTH_CLIENT_SECRET_REF: ${PINTEREST_OAUTH_CLIENT_SECRET_REF:-vault://pinterest/oauth/client-secret}
+      OAUTH_STATE_SECRET: ${PINTEREST_OAUTH_STATE_SECRET:?PINTEREST_OAUTH_STATE_SECRET required}
+      OAUTH_REDIRECT_URI: ${PINTEREST_OAUTH_REDIRECT_URI:-https://admin.atozproducthub.dev/pinterest/oauth/callback}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://atozproducthub.dev}
+    networks:
+      - app
+      - data
+    healthcheck: *app-healthcheck
+    <<: *app-hardening
+
+  seo-service:
+    build:
+      context: ../..
+      dockerfile: services/seo-service/Dockerfile
+    environment:
+      APP_ENV: prod
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${SEO_JWT_SECRET:?SEO_JWT_SECRET required}
+      EVENT_WEBHOOK_SECRET: ${SEO_EVENT_SECRET:?SEO_EVENT_SECRET required}
+      TYPESENSE_API_BASE: http://typesense:8108
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:?TYPESENSE_API_KEY required}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://atozproducthub.dev}
+    networks:
+      - app
+      - data
+    healthcheck: *app-healthcheck
+    <<: *app-hardening
+
+  analytics-service:
+    build:
+      context: ../..
+      dockerfile: services/analytics-service/Dockerfile
+    environment:
+      APP_ENV: prod
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${ANALYTICS_JWT_SECRET:?ANALYTICS_JWT_SECRET required}
+      EVENT_WEBHOOK_SECRET: ${ANALYTICS_EVENT_SECRET:?ANALYTICS_EVENT_SECRET required}
+      KAFKA_ENABLED: "true"
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      WAREHOUSE_ENABLED: "true"
+      CLICKHOUSE_URL: http://clickhouse:8123
+    networks:
+      - app
+      - data
+    healthcheck: *app-healthcheck
+    <<: *app-hardening
+
+  admin-service:
+    build:
+      context: ../..
+      dockerfile: services/admin-service/Dockerfile
+    environment:
+      APP_ENV: prod
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${ADMIN_JWT_SECRET:?ADMIN_JWT_SECRET required}
+      EVENT_WEBHOOK_SECRET: ${ADMIN_EVENT_SECRET:?ADMIN_EVENT_SECRET required}
+      INTERNAL_TOKEN: ${ADMIN_INTERNAL_TOKEN:?ADMIN_INTERNAL_TOKEN required}
+    networks:
+      - app
+      - data
+    healthcheck: *app-healthcheck
+    <<: *app-hardening
+
+  automation-service:
+    build:
+      context: ../..
+      dockerfile: services/automation-service/Dockerfile
+    environment:
+      APP_ENV: prod
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${AUTOMATION_JWT_SECRET:?AUTOMATION_JWT_SECRET required}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_BACKEND_URL: redis://redis:6379/0
+      ADMIN_BASE_URL: http://admin-service:8000
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:?ADMIN_JWT_SECRET required}
+      ADMIN_INTERNAL_TOKEN: ${ADMIN_INTERNAL_TOKEN:?ADMIN_INTERNAL_TOKEN required}
+      PINTEREST_BASE_URL: http://pinterest-service:8000
+      PINTEREST_JWT_SECRET: ${PINTEREST_JWT_SECRET:?PINTEREST_JWT_SECRET required}
+      SEO_BASE_URL: http://seo-service:8000
+      SEO_JWT_SECRET: ${SEO_JWT_SECRET:?SEO_JWT_SECRET required}
+      AFFILIATE_BASE_URL: http://affiliate-service:8000
+      AFFILIATE_JWT_SECRET: ${AFFILIATE_JWT_SECRET:?AFFILIATE_JWT_SECRET required}
+      ANALYTICS_BASE_URL: http://analytics-service:8000
+      ANALYTICS_JWT_SECRET: ${ANALYTICS_JWT_SECRET:?ANALYTICS_JWT_SECRET required}
+      AIOS_BRIDGE_BASE_URL: http://aios-bridge:8000
+      AIOS_BRIDGE_INTERNAL_TOKEN: ${AIOS_BRIDGE_INTERNAL_TOKEN:?AIOS_BRIDGE_INTERNAL_TOKEN required}
+    networks:
+      - app
+      - data
+    healthcheck: *app-healthcheck
+    <<: *app-hardening
+
+  automation-worker:
+    build:
+      context: ../..
+      dockerfile: services/automation-service/Dockerfile
+    command:
+      [
+        "celery",
+        "-A",
+        "atoz_automation_service.celery_app:celery_app",
+        "worker",
+        "-Q",
+        "automation,celery",
+        "--concurrency=2",
+        "--max-tasks-per-child=200",
+      ]
+    environment:
+      APP_ENV: prod
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${AUTOMATION_JWT_SECRET:?AUTOMATION_JWT_SECRET required}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_BACKEND_URL: redis://redis:6379/0
+      ADMIN_BASE_URL: http://admin-service:8000
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:?ADMIN_JWT_SECRET required}
+      ADMIN_INTERNAL_TOKEN: ${ADMIN_INTERNAL_TOKEN:?ADMIN_INTERNAL_TOKEN required}
+      PINTEREST_BASE_URL: http://pinterest-service:8000
+      PINTEREST_JWT_SECRET: ${PINTEREST_JWT_SECRET:?PINTEREST_JWT_SECRET required}
+      SEO_BASE_URL: http://seo-service:8000
+      SEO_JWT_SECRET: ${SEO_JWT_SECRET:?SEO_JWT_SECRET required}
+      AFFILIATE_BASE_URL: http://affiliate-service:8000
+      AFFILIATE_JWT_SECRET: ${AFFILIATE_JWT_SECRET:?AFFILIATE_JWT_SECRET required}
+      ANALYTICS_BASE_URL: http://analytics-service:8000
+      ANALYTICS_JWT_SECRET: ${ANALYTICS_JWT_SECRET:?ANALYTICS_JWT_SECRET required}
+      AIOS_BRIDGE_BASE_URL: http://aios-bridge:8000
+      AIOS_BRIDGE_INTERNAL_TOKEN: ${AIOS_BRIDGE_INTERNAL_TOKEN:?AIOS_BRIDGE_INTERNAL_TOKEN required}
+    networks:
+      - app
+      - data
+    <<: *app-hardening
+
+  automation-beat:
+    build:
+      context: ../..
+      dockerfile: services/automation-service/Dockerfile
+    command:
+      [
+        "celery",
+        "-A",
+        "atoz_automation_service.celery_app:celery_app",
+        "beat",
+        "--loglevel=INFO",
+      ]
+    environment:
+      APP_ENV: prod
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${AUTOMATION_JWT_SECRET:?AUTOMATION_JWT_SECRET required}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_BACKEND_URL: redis://redis:6379/0
+      ADMIN_BASE_URL: http://admin-service:8000
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:?ADMIN_JWT_SECRET required}
+      ADMIN_INTERNAL_TOKEN: ${ADMIN_INTERNAL_TOKEN:?ADMIN_INTERNAL_TOKEN required}
+      PINTEREST_BASE_URL: http://pinterest-service:8000
+      PINTEREST_JWT_SECRET: ${PINTEREST_JWT_SECRET:?PINTEREST_JWT_SECRET required}
+      SEO_BASE_URL: http://seo-service:8000
+      SEO_JWT_SECRET: ${SEO_JWT_SECRET:?SEO_JWT_SECRET required}
+      AFFILIATE_BASE_URL: http://affiliate-service:8000
+      AFFILIATE_JWT_SECRET: ${AFFILIATE_JWT_SECRET:?AFFILIATE_JWT_SECRET required}
+      ANALYTICS_BASE_URL: http://analytics-service:8000
+      ANALYTICS_JWT_SECRET: ${ANALYTICS_JWT_SECRET:?ANALYTICS_JWT_SECRET required}
+      AIOS_BRIDGE_BASE_URL: http://aios-bridge:8000
+      AIOS_BRIDGE_INTERNAL_TOKEN: ${AIOS_BRIDGE_INTERNAL_TOKEN:?AIOS_BRIDGE_INTERNAL_TOKEN required}
+    networks:
+      - app
+      - data
+    <<: *app-hardening
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - data
+    mem_limit: 1g
+    pids_limit: 512
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - data
+    mem_limit: 256m
+    pids_limit: 128
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  typesense:
+    image: typesense/typesense:27.1
+    restart: unless-stopped
+    command: ["--data-dir", "/data", "--api-key", "${TYPESENSE_API_KEY:?TYPESENSE_API_KEY required}", "--enable-cors"]
+    volumes:
+      - typesense_data:/data
+    networks:
+      - data
+    mem_limit: 512m
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/8108'"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+
+  kafka:
+    image: apache/kafka:3.9.0
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID:-aatoz-kafka-cluster-2026}
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - data
+    mem_limit: 1g
+    pids_limit: 512
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list > /dev/null 2>&1'"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    networks:
+      - data
+    mem_limit: 1g
+    pids_limit: 512
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'wget -qO- http://localhost:8123/ping | grep -q Ok'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+networks:
+  edge: {}
+  app: {}
+  data:
+    internal: true
+  integration: {}
+
+volumes:
+  postgres_data:
+  content_data:
+  redis_data:
+  typesense_data:
+  kafka_data:
+  clickhouse_data:
+  caddy_data:
+  caddy_config:

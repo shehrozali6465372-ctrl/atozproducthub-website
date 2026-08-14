@@ -13,6 +13,12 @@ COPY services/admin-service /srv/services/admin-service
 RUN pip install --no-cache-dir /srv/libs/backend-core \
     && pip install --no-cache-dir /srv/services/admin-service
 
+# Run as a non-root user (M11 production hardening: least privilege).
+RUN addgroup --system appuser && adduser --system --ingroup appuser appuser \
+    && chown -R appuser:appuser /srv
+
+USER appuser
+
 EXPOSE 8000
 
 CMD ["uvicorn", "atoz_admin_service.main:app", "--host", "0.0.0.0", "--port", "8000"]

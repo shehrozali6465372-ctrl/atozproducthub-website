@@ -384,6 +384,17 @@ For every phase: Goal, Scope, Deliverables, Dependencies, Complexity, Risk, Succ
 
 ### Phase 13 — Production Deployment
 
+- **Status:** 🟡 In progress — M11 Phase 1 (production audit +
+  infrastructure hardening, v0.12.0, ADR-0012) complete: non-root
+  read-only images, resource limits, trust-zone network isolation, Caddy
+  TLS edge, production compose profile (`infra/docker/compose.prod.yml`),
+  fail-fast production secrets guard (backend-core), and CI enforcement
+  (`tools/dev/check-infra.sh` + `docker compose config -q`). Phase A audit
+  recorded in `docs/operations/001-production-audit.md`. Follow-ups:
+  Phase C (Vault client, store auth/TLS, rotation), Phase D
+  (observability: collector, dashboards, alerts), Phase E (backup/DR),
+  Phase F (staging/production workflows, migration gate, rollback,
+  frontend containers).
 - **Goal:** Production go-live: environments, security, monitoring, DR, and launch.
 - **Scope:** production IaC; Cloudflare CDN/WAF/DNS; Vercel + Fly.io deployments; Vault production; observability SLOs + alerting; backup/DR drills; load tests at target scale; security review; **Website Contract ratification**; runbooks in `docs/operations/`; go-live checklist.
 - **Deliverables:** production environment live; monitoring dashboards + alerts; DR plan + successful drill; load test report; security review sign-off; go-live checklist signed.
@@ -481,7 +492,10 @@ For every phase: Goal, Scope, Deliverables, Dependencies, Complexity, Risk, Succ
 **Phases:** 13.
 **Goal:** Production go-live.
 **Definition of Done:**
-- [ ] Production environment live behind CDN/WAF; deploys green.
+- [x] Infrastructure hardening: non-root read-only images, resource limits,
+      network isolation, TLS edge, prod compose profile, secrets guard, CI
+      enforcement (v0.12.0 — M11 Phase 1; audit in docs/operations/001).
+- [ ] Production environment live behind CDN/WAF; deploys green (Phases D–F).
 - [ ] SLOs met for 30 days; load tests pass at target scale.
 - [ ] DR drill passes; backup restore verified.
 - [ ] Security review closed; Website Contract ratified.

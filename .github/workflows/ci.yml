@@ -33,6 +33,8 @@ jobs:
         run: bash tools/dev/check-no-ai.sh
       - name: Contract validation
         run: bash tools/dev/check-contracts.sh
+      - name: Infrastructure hardening guard
+        run: bash tools/dev/check-infra.sh
       - name: Dependency vulnerabilities (pip-audit)
         run: pip-audit
 
@@ -262,6 +264,32 @@ jobs:
             name="$(basename "$d")"
             docker build -f "$d/Dockerfile" -t "${name}:ci" .
           done
+      - name: Validate production compose profile
+        env:
+          DATABASE_URL: postgresql+asyncpg://atoz:ci-only@postgres:5432/atoz
+          POSTGRES_DB: atoz
+          POSTGRES_USER: atoz
+          POSTGRES_PASSWORD: ci-only
+          GATEWAY_JWT_SECRET: ci-only
+          CONTENT_JWT_SECRET: ci-only
+          AFFILIATE_JWT_SECRET: ci-only
+          PINTEREST_JWT_SECRET: ci-only
+          SEO_JWT_SECRET: ci-only
+          ANALYTICS_JWT_SECRET: ci-only
+          ADMIN_JWT_SECRET: ci-only
+          AUTOMATION_JWT_SECRET: ci-only
+          AFFILIATE_TOKEN_SIGNING_SECRET: ci-only
+          AIOS_API_KEY: ci-only
+          AIOS_BASE_URL: https://aios.invalid
+          AIOS_BRIDGE_INTERNAL_TOKEN: ci-only
+          ADMIN_INTERNAL_TOKEN: ci-only
+          SEO_EVENT_SECRET: ci-only
+          ANALYTICS_EVENT_SECRET: ci-only
+          ADMIN_EVENT_SECRET: ci-only
+          TYPESENSE_API_KEY: ci-only
+          PINTEREST_OAUTH_CLIENT_ID: ci-only
+          PINTEREST_OAUTH_STATE_SECRET: ci-only
+        run: docker compose -f infra/docker/compose.prod.yml config -q
       - name: Compose up
         run: docker compose -f infra/docker/compose.yml up -d --build
       - name: Health check (api)

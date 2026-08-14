@@ -86,6 +86,8 @@ def test_token_disabled_in_production(monkeypatch) -> None:
     monkeypatch.setenv("APP_ENV", "prod")
     monkeypatch.setenv("JWT_SECRET", "test-secret-0123456789abcdef0123456789abcdef")
     monkeypatch.setenv("AUTH_DEV_PASSWORD_HASH", "irrelevant")
+    # M11 secrets guard: prod must not boot with the dev-only subject default.
+    monkeypatch.setenv("AUTH_DEV_SUBJECT", "disabled-in-prod")
 
     from atoz_api.main import create_app
 
