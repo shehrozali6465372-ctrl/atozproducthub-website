@@ -231,6 +231,60 @@ jobs:
           python -m alembic -c db/migrations/alembic.ini downgrade base
           python -m alembic -c db/migrations/alembic.ini upgrade head
 
+  recovery:
+    name: Backup + restore drill (PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: atoz
+          POSTGRES_USER: atoz
+          POSTGRES_PASSWORD: atoz
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U atoz"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Seed data
+        env:
+          PGPASSWORD: atoz
+        run: |
+          psql -h localhost -U atoz -d atoz -c "CREATE TABLE drill_check(id integer PRIMARY KEY, payload text);"
+          psql -h localhost -U atoz -d atoz -c "INSERT INTO drill_check VALUES (1, 'recover-me');"
+      - name: Backup
+        env:
+          PGHOST: localhost
+          PGPORT: "5432"
+          PGUSER: atoz
+          PGDATABASE: atoz
+          PGPASSWORD: atoz
+          BACKUP_DIR: ./backups
+        run: bash infra/db/backup.sh
+      - name: Wipe target
+        env:
+          PGPASSWORD: atoz
+        run: psql -h localhost -U atoz -d atoz -c "DROP TABLE drill_check;"
+      - name: Restore
+        env:
+          PGHOST: localhost
+          PGPORT: "5432"
+          PGUSER: atoz
+          PGDATABASE: atoz
+          PGPASSWORD: atoz
+          BACKUP_DIR: ./backups
+        run: bash infra/db/restore.sh
+      - name: Verify restored data
+        env:
+          PGPASSWORD: atoz
+        run: |
+          psql -h localhost -U atoz -d atoz -tAc "SELECT payload FROM drill_check WHERE id = 1;" | grep -q "recover-me"
+          psql -h localhost -U atoz -d atoz -tAc "SELECT count(*) FROM drill_check;" | grep -q "1"
+
   frontend:
     name: Frontend (lint, types, build, tests)
     runs-on: ubuntu-latest

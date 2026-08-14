@@ -95,6 +95,11 @@ class AutomationService:
         self._event_publisher = event_publisher
         self._settings = settings
 
+    @property
+    def uow_factory(self):
+        """Unit-of-work factory used by the observability refresh task."""
+        return self._uow_factory
+
     @staticmethod
     def build_uow(session_factory) -> AutomationUnitOfWork:
         return AutomationUnitOfWork.build(session_factory)

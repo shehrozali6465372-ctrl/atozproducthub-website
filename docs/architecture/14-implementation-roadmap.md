@@ -391,10 +391,13 @@ For every phase: Goal, Scope, Deliverables, Dependencies, Complexity, Risk, Succ
   fail-fast production secrets guard (backend-core), and CI enforcement
   (`tools/dev/check-infra.sh` + `docker compose config -q`). Phase A audit
   recorded in `docs/operations/001-production-audit.md`. Follow-ups:
-  Phase C (Vault client, store auth/TLS, rotation), Phase D
-  (observability: collector, dashboards, alerts), Phase E (backup/DR),
-  Phase F (staging/production workflows, migration gate, rollback,
-  frontend containers).
+  M11 Phase 2 (v0.13.0, ADR-0013) implemented Phases C–G: Vault client +
+  store auth (Redis/ClickHouse/Kafka) + rotation policy, observability
+  stack (Prometheus/Alertmanager/Grafana/OTel/Loki/Promtail) with SLO
+  alerts and queue metrics, automated backup + CI-tested restore drill,
+  deployment/rollback workflow scaffold, and failure-injection tests.
+  Remaining: production rollout (Phase F runner + secrets), 30-day
+  reliability validation, and final Go/No-Go (Phase H gates).
 - **Goal:** Production go-live: environments, security, monitoring, DR, and launch.
 - **Scope:** production IaC; Cloudflare CDN/WAF/DNS; Vercel + Fly.io deployments; Vault production; observability SLOs + alerting; backup/DR drills; load tests at target scale; security review; **Website Contract ratification**; runbooks in `docs/operations/`; go-live checklist.
 - **Deliverables:** production environment live; monitoring dashboards + alerts; DR plan + successful drill; load test report; security review sign-off; go-live checklist signed.
@@ -495,10 +498,18 @@ For every phase: Goal, Scope, Deliverables, Dependencies, Complexity, Risk, Succ
 - [x] Infrastructure hardening: non-root read-only images, resource limits,
       network isolation, TLS edge, prod compose profile, secrets guard, CI
       enforcement (v0.12.0 — M11 Phase 1; audit in docs/operations/001).
+- [x] Secrets + store auth (Vault boundary, Redis/ClickHouse/Kafka auth,
+      rotation policy), observability + SLO alerts + queue metrics,
+      automated backup with CI restore drill, deployment/rollback workflow
+      scaffold, failure-injection tests (v0.13.0 — M11 Phase 2;
+      docs/operations/002–006).
 - [ ] Production environment live behind CDN/WAF; deploys green (Phases D–F).
-- [ ] SLOs met for 30 days; load tests pass at target scale.
-- [ ] DR drill passes; backup restore verified.
-- [ ] Security review closed; Website Contract ratified.
+- [ ] Production rollout executed; staging + prod deploys green (Phase F
+      runner + secrets).
+- [ ] SLOs met for 30 days; load tests pass at target scale (Phase H gate).
+- [ ] DR drill passes in production; RPO/RTO actuals recorded (Phase H gate).
+- [ ] Security review closed; final Go/No-Go signed (Phase H gate);
+      Website Contract ratified.
 - [ ] Go-live checklist signed; runbooks published.
 
 ---

@@ -8,7 +8,7 @@ version = "0.8.0"
 description = "Analytics events, aggregation, and read-model reporting — M8 business layer."
 requires-python = ">=3.11"
 dependencies = [
-    "atoz-backend-core==0.12.0",
+    "atoz-backend-core==0.13.0",
     "uvicorn[standard]>=0.30,<1",
     "sqlalchemy[asyncio]>=2.0,<3",
     "asyncpg>=0.29,<1",

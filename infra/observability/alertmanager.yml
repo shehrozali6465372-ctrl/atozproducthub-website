@@ -1,0 +1,10 @@
+# Alertmanager routing (M11 Phase D). Delivery channels are wired in the
+# deployment phase; until then alerts are logged by Alertmanager.
+route:
+  receiver: default
+  group_by: [alertname, service]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+receivers:
+  - name: default

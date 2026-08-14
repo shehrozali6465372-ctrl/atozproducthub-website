@@ -32,7 +32,12 @@ def build_backbone(settings: Settings) -> EventBackbone:
     """Production backbone is Kafka; dev/CI default is in-memory."""
     if settings.kafka_enabled:
         return KafkaEventBackbone(
-            bootstrap_servers=settings.kafka_bootstrap_servers, topic=settings.kafka_topic
+            bootstrap_servers=settings.kafka_bootstrap_servers,
+            topic=settings.kafka_topic,
+            security_protocol=settings.kafka_security_protocol,
+            sasl_mechanism=settings.kafka_sasl_mechanism,
+            sasl_username=settings.kafka_sasl_username,
+            sasl_password=settings.kafka_sasl_password,
         )
     return InMemoryEventBackbone()
 

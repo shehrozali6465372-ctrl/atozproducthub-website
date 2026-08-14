@@ -14,6 +14,10 @@ AppEnv = Literal["dev", "staging", "prod", "test"]
 # substrings so credentials embedded in URLs are caught too).
 DEV_ONLY_TOKENS = ("dev-only-", "dev-admin", "CHANGE_ME")
 
+# Field-name markers for secrets that must never be empty in production
+# (empty values would silently disable authentication/verification).
+SECRET_FIELD_MARKERS = ("secret", "token", "password", "api_key", "_key")
+
 
 def _contains_dev_token(value: object) -> bool:
     """Recursively scan strings for dev-only/placeholder tokens."""
@@ -85,6 +89,11 @@ class BaseServiceSettings(BaseSettings):
                 raise ValueError(
                     f"field {name!r} still uses a dev-only default "
                     f"({value!r}); production requires an injected secret"
+                )
+            if value == "" and any(marker in name.lower() for marker in SECRET_FIELD_MARKERS):
+                raise ValueError(
+                    f"field {name!r} is empty; production requires an injected "
+                    "secret (fail-fast, no silent defaults)"
                 )
         return self
 

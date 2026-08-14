@@ -51,3 +51,45 @@ def test_non_production_allows_dev_defaults() -> None:
         app_env="staging", database_url="postgresql://user:dev-only-pw@db:5432/db"
     )
     assert settings.database_url == "postgresql://user:dev-only-pw@db:5432/db"
+
+
+def test_production_rejects_empty_secret_fields() -> None:
+    """M11 Phase 2: empty secret values must not boot in production."""
+
+    class SecretSettings(BaseServiceSettings):
+        jwt_secret: str = ""
+        internal_token: str = ""
+
+    with pytest.raises(ValidationError, match="empty"):
+        SecretSettings(
+            app_env="prod",
+            database_url="postgresql+asyncpg://u:p@db:5432/db",
+            jwt_secret="prod-secret",
+        )
+
+    with pytest.raises(ValidationError, match="empty"):
+        SecretSettings(
+            app_env="prod",
+            database_url="postgresql+asyncpg://u:p@db:5432/db",
+            internal_token="",
+            jwt_secret="prod-secret",
+        )
+
+
+def test_production_allows_empty_non_secret_fields() -> None:
+    class SecretSettings(BaseServiceSettings):
+        jwt_secret: str = ""
+
+    settings = BaseServiceSettings(
+        app_env="prod",
+        database_url="postgresql+asyncpg://u:p@db:5432/db",
+        otel_exporter_endpoint="",
+    )
+    assert settings.is_production is True
+    ok = SecretSettings(
+        app_env="prod",
+        database_url="postgresql+asyncpg://u:p@db:5432/db",
+        jwt_secret="prod-secret",
+        otel_exporter_endpoint="",
+    )
+    assert ok.jwt_secret == "prod-secret"

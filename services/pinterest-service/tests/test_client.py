@@ -138,6 +138,82 @@ def test_403_is_non_retryable() -> None:
     _run(scenario())
 
 
+def test_5xx_retries_then_succeeds() -> None:
+    """503 (gateway error) is retryable with backoff (Phase G failure injection)."""
+    transport = MockPinterestTransport()
+    transport.add_failure(503, "upstream unavailable")
+    transport.add_failure(502, "bad gateway")
+    transport.boards = [{"id": "b1", "name": "Kitchen"}]
+
+    async def scenario() -> None:
+        client = await _client(transport)
+        try:
+            page = await client.list_boards()
+            assert [b["id"] for b in page.items] == ["b1"]
+        finally:
+            await client.close()
+
+    _run(scenario())
+
+
+def test_5xx_exhausts_retries_and_raises() -> None:
+    transport = MockPinterestTransport()
+    for _ in range(4):
+        transport.add_failure(503, "upstream unavailable")
+
+    async def scenario() -> None:
+        client = await _client(transport)
+        try:
+            try:
+                await client.list_boards()
+                raise AssertionError("expected PinterestApiException")
+            except PinterestApiException as exc:
+                assert exc.kind == RemoteErrorKind.SERVER_ERROR
+                assert exc.retryable is True
+        finally:
+            await client.close()
+
+    _run(scenario())
+
+
+def test_timeout_retries_then_succeeds() -> None:
+    """httpx timeouts are retried with backoff, then a fresh call succeeds."""
+    from collections.abc import Callable
+
+    import httpx
+
+    class FlakyTimeoutTransport(httpx.MockTransport):
+        def __init__(
+            self,
+            inner: Callable[[httpx.Request], httpx.Response],
+            *,
+            fail_first: int,
+        ) -> None:
+            self._inner = inner
+            self._remaining = fail_first
+            super().__init__(self._handler)
+
+        async def _handler(self, request: httpx.Request) -> httpx.Response:
+            if self._remaining > 0:
+                self._remaining -= 1
+                raise httpx.ReadTimeout("simulated timeout", request=request)
+            return await self._inner(request)
+
+    base = MockPinterestTransport()
+    base.boards = [{"id": "b1", "name": "Kitchen"}]
+    transport = FlakyTimeoutTransport(inner=base._handler, fail_first=2)
+
+    async def scenario() -> None:
+        client = await _client(transport)
+        try:
+            page = await client.list_boards()
+            assert [b["id"] for b in page.items] == ["b1"]
+        finally:
+            await client.close()
+
+    _run(scenario())
+
+
 def test_401_triggers_token_refresh_once() -> None:
     transport = MockPinterestTransport()
     transport.add_failure(401, "expired")

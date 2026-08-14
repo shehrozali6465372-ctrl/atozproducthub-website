@@ -1,0 +1,129 @@
+name: Deploy
+
+# M11 Phase F deployment workflow (Task 23). Activates on manual dispatch
+# (staging or prod). Requires:
+#   * a self-hosted runner tagged `deploy` with Docker Compose + repo checkout;
+#   * repository secrets: DEPLOY_HOST, DEPLOY_SSH_USER, DEPLOY_SSH_KEY,
+#     DEPLOY_ENV_FILE (base64 production env template), DATABASE_URL.
+# Rollback: on smoke-test failure the previous image tag is redeployed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        default: staging
+        type: choice
+        options: [staging, prod]
+      image_tag:
+        description: "Image tag to deploy (default: current commit)"
+        required: false
+        default: ""
+        type: string
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-push:
+    name: Build + push images (GHCR)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Determine image tag
+        id: tag
+        run: |
+          TAG="${{ github.event.inputs.image_tag }}"
+          if [ -z "$TAG" ]; then TAG="${GITHUB_SHA::12}"; fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+      - name: Build and push images
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          build_and_push() {
+            image="ghcr.io/${{ github.repository }}/$1"
+            docker build -f "$3" -t "${image}:${IMAGE_TAG}" -t "${image}:latest" "$2"
+            docker push "${image}:${IMAGE_TAG}"
+            docker push "${image}:latest"
+          }
+          build_and_push api . infra/docker/api.Dockerfile
+          for d in services/*/; do
+            name="$(basename "$d")"
+            build_and_push "$name" . "$d/Dockerfile"
+          done
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+
+  deploy:
+    name: Deploy (${{ github.event.inputs.environment || 'staging' }})
+    needs: build-push
+    runs-on: [self-hosted, deploy]
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    env:
+      IMAGE_TAG: ${{ needs.build-push.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync repository to host
+        run: |
+          install -m 600 -o "$(id -u)" /dev/null /tmp/deploy_key
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > /tmp/deploy_key
+          SSHOPTS="-i /tmp/deploy_key -o StrictHostKeyChecking=no"
+          rsync -az --delete -e "ssh $SSHOPTS" ./ \
+            "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/atozproducthub/"
+          ssh $SSHOPTS "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            'printf %s "$DEPLOY_ENV_FILE" | base64 -d > /opt/atozproducthub/.env.prod && chmod 600 /opt/atozproducthub/.env.prod'
+        env:
+          DEPLOY_ENV_FILE: ${{ secrets.DEPLOY_ENV_FILE }}
+
+      - name: Migration gate (upgrade head before rollout)
+        run: |
+          SSHOPTS="-i /tmp/deploy_key -o StrictHostKeyChecking=no"
+          ssh $SSHOPTS "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            'cd /opt/atozproducthub && \
+             docker compose -f infra/docker/compose.prod.yml --env-file .env.prod \
+               run --rm content-service \
+               sh -c "cd /srv/services/content-service && alembic -c db/migrations/alembic.ini upgrade head"'
+
+      - name: Rollout stack
+        run: |
+          SSHOPTS="-i /tmp/deploy_key -o StrictHostKeyChecking=no"
+          ssh $SSHOPTS "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "cd /opt/atozproducthub && \
+             docker compose -f infra/docker/compose.prod.yml --env-file .env.prod \
+               up -d --no-deps --pull always --scale api=2"
+          echo "${{ needs.build-push.outputs.tag }}" > /tmp/last-deployed-tag
+
+      - name: Smoke tests (health + readiness)
+        run: |
+          SSHOPTS="-i /tmp/deploy_key -o StrictHostKeyChecking=no"
+          ssh $SSHOPTS "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            'set -e; for i in $(seq 1 30); do \
+               curl -fsS https://api.atozproducthub.dev/healthz && break || sleep 2; \
+             done; \
+             curl -fsS https://api.atozproducthub.dev/healthz'
+
+      - name: Post-deploy verification
+        run: |
+          SSHOPTS="-i /tmp/deploy_key -o StrictHostKeyChecking=no"
+          ssh $SSHOPTS "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            'cd /opt/atozproducthub && docker compose -f infra/docker/compose.prod.yml --env-file .env.prod ps'
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          SSHOPTS="-i /tmp/deploy_key -o StrictHostKeyChecking=no"
+          PREV_TAG="$(cat /tmp/last-deployed-tag 2>/dev/null || echo latest)"
+          echo "rolling back to image tag ${PREV_TAG}"
+          ssh $SSHOPTS "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "cd /opt/atozproducthub && \
+             docker compose -f infra/docker/compose.prod.yml --env-file .env.prod \
+               up -d --no-deps --pull always"

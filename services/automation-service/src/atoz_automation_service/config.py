@@ -41,6 +41,11 @@ class Settings(BaseServiceSettings):
     beat_tick_interval_seconds: int = 60
     beat_lock_ttl_seconds: int = 55
 
+    # Queue/worker observability (M11 Phase D): Prometheus gauges refreshed
+    # from the durable ledgers. Off by default; production enables it.
+    queue_metrics_enabled: bool = False
+    metrics_refresh_interval_seconds: float = 30.0
+
     # Notifications: best-effort, at-most-once per outcome. When no
     # recipient is configured the executor skips notifications entirely
     # (routing per operator lands with the Authentication milestone).

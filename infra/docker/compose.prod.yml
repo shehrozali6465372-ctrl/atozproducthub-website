@@ -84,7 +84,7 @@ services:
       APP_ENV: prod
       APP_LOG_LEVEL: ${APP_LOG_LEVEL:-INFO}
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD required}@redis:6379/0
       JWT_SECRET: ${GATEWAY_JWT_SECRET:?GATEWAY_JWT_SECRET required}
       CORS_ORIGINS: ${CORS_ORIGINS:-["https://atozproducthub.dev","https://www.atozproducthub.dev"]}
       # Dev identity placeholder is disabled in prod (auth routes return 501);
@@ -122,7 +122,7 @@ services:
     environment:
       APP_ENV: prod
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD required}@redis:6379/0
       JWT_SECRET: ${CONTENT_JWT_SECRET:?CONTENT_JWT_SECRET required}
       CONTENT_STORAGE_DIR: /data/content
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://atozproducthub.dev}
@@ -141,7 +141,7 @@ services:
     environment:
       APP_ENV: prod
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD required}@redis:6379/0
       JWT_SECRET: ${AFFILIATE_JWT_SECRET:?AFFILIATE_JWT_SECRET required}
       TOKEN_SIGNING_SECRET: ${AFFILIATE_TOKEN_SIGNING_SECRET:?AFFILIATE_TOKEN_SIGNING_SECRET required}
       WEBHOOK_SECRETS: ${AFFILIATE_WEBHOOK_SECRETS:-{}}
@@ -158,7 +158,7 @@ services:
     environment:
       APP_ENV: prod
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD required}@redis:6379/0
       JWT_SECRET: ${PINTEREST_JWT_SECRET:?PINTEREST_JWT_SECRET required}
       OAUTH_CLIENT_ID: ${PINTEREST_OAUTH_CLIENT_ID:?PINTEREST_OAUTH_CLIENT_ID required}
       OAUTH_CLIENT_SECRET_REF: ${PINTEREST_OAUTH_CLIENT_SECRET_REF:-vault://pinterest/oauth/client-secret}
@@ -197,13 +197,17 @@ services:
     environment:
       APP_ENV: prod
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD required}@redis:6379/0
       JWT_SECRET: ${ANALYTICS_JWT_SECRET:?ANALYTICS_JWT_SECRET required}
       EVENT_WEBHOOK_SECRET: ${ANALYTICS_EVENT_SECRET:?ANALYTICS_EVENT_SECRET required}
       KAFKA_ENABLED: "true"
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_SECURITY_PROTOCOL: SASL_PLAINTEXT
+      KAFKA_SASL_MECHANISM: PLAIN
+      KAFKA_SASL_USERNAME: ${KAFKA_SASL_USERNAME:?KAFKA_SASL_USERNAME required}
+      KAFKA_SASL_PASSWORD: ${KAFKA_SASL_PASSWORD:?KAFKA_SASL_PASSWORD required}
       WAREHOUSE_ENABLED: "true"
-      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_URL: http://${CLICKHOUSE_USER:?CLICKHOUSE_USER required}:${CLICKHOUSE_PASSWORD:?CLICKHOUSE_PASSWORD required}@clickhouse:8123
     networks:
       - app
       - data
@@ -217,7 +221,7 @@ services:
     environment:
       APP_ENV: prod
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD required}@redis:6379/0
       JWT_SECRET: ${ADMIN_JWT_SECRET:?ADMIN_JWT_SECRET required}
       EVENT_WEBHOOK_SECRET: ${ADMIN_EVENT_SECRET:?ADMIN_EVENT_SECRET required}
       INTERNAL_TOKEN: ${ADMIN_INTERNAL_TOKEN:?ADMIN_INTERNAL_TOKEN required}
@@ -234,10 +238,10 @@ services:
     environment:
       APP_ENV: prod
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD required}@redis:6379/0
       JWT_SECRET: ${AUTOMATION_JWT_SECRET:?AUTOMATION_JWT_SECRET required}
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_BACKEND_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD required}@redis:6379/0
+      CELERY_BACKEND_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD required}@redis:6379/0
       ADMIN_BASE_URL: http://admin-service:8000
       ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:?ADMIN_JWT_SECRET required}
       ADMIN_INTERNAL_TOKEN: ${ADMIN_INTERNAL_TOKEN:?ADMIN_INTERNAL_TOKEN required}
@@ -275,10 +279,10 @@ services:
     environment:
       APP_ENV: prod
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD required}@redis:6379/0
       JWT_SECRET: ${AUTOMATION_JWT_SECRET:?AUTOMATION_JWT_SECRET required}
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_BACKEND_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD required}@redis:6379/0
+      CELERY_BACKEND_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD required}@redis:6379/0
       ADMIN_BASE_URL: http://admin-service:8000
       ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:?ADMIN_JWT_SECRET required}
       ADMIN_INTERNAL_TOKEN: ${ADMIN_INTERNAL_TOKEN:?ADMIN_INTERNAL_TOKEN required}
@@ -312,10 +316,10 @@ services:
     environment:
       APP_ENV: prod
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD required}@redis:6379/0
       JWT_SECRET: ${AUTOMATION_JWT_SECRET:?AUTOMATION_JWT_SECRET required}
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_BACKEND_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD required}@redis:6379/0
+      CELERY_BACKEND_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD required}@redis:6379/0
       ADMIN_BASE_URL: http://admin-service:8000
       ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:?ADMIN_JWT_SECRET required}
       ADMIN_INTERNAL_TOKEN: ${ADMIN_INTERNAL_TOKEN:?ADMIN_INTERNAL_TOKEN required}
@@ -357,7 +361,10 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD required}"]
+    environment:
+      # Lets redis-cli health checks authenticate without echoing the secret.
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?REDIS_PASSWORD required}
     volumes:
       - redis_data:/data
     networks:
@@ -393,10 +400,13 @@ services:
     environment:
       KAFKA_NODE_ID: "1"
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: SASL_PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: SASL_PLAINTEXT://kafka:9092
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,SASL_PLAINTEXT:SASL_PLAINTEXT
+      KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
+      KAFKA_SASL_MECHANISM_CONTROLLER_PROTOCOL: PLAIN
+      KAFKA_LISTENER_NAME_SASL_PLAINTEXT_PLAIN_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_SASL_USERNAME:?KAFKA_SASL_USERNAME required}\" password=\"${KAFKA_SASL_PASSWORD:?KAFKA_SASL_PASSWORD required}\" user_${KAFKA_SASL_USERNAME}=\"${KAFKA_SASL_PASSWORD}\";"
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
@@ -419,6 +429,10 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:24.8
     restart: unless-stopped
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:?CLICKHOUSE_USER required}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?CLICKHOUSE_PASSWORD required}
+      CLICKHOUSE_DB: atoz_analytics
     ulimits:
       nofile:
         soft: 262144
@@ -436,6 +450,107 @@ services:
       retries: 5
       start_period: 15s
 
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.108.0
+    restart: unless-stopped
+    command: ["--config", "/etc/otel/config.yml"]
+    volumes:
+      - ../observability/otel-collector.yml:/etc/otel/config.yml:ro
+    networks:
+      - app
+    mem_limit: 256m
+    pids_limit: 128
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+    volumes:
+      - ../observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../observability/alert-rules.yml:/etc/prometheus/rules/alert-rules.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - app
+    mem_limit: 512m
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy | grep -q 'Prometheus Server is Healthy'"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - ../observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    networks:
+      - app
+    mem_limit: 128m
+    pids_limit: 128
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      # GRAFANA_ADMIN_PASSWORD — Vault; defaults to a strong local value.
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change-me-before-production}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - ../observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    networks:
+      - app
+    mem_limit: 256m
+    pids_limit: 128
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health | grep -q '\"database\":\"ok\"'"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+
+  loki:
+    image: grafana/loki:3.1.1
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/config.yml"]
+    volumes:
+      - ../observability/loki.yml:/etc/loki/config.yml:ro
+      - loki_data:/loki
+    networks:
+      - app
+    mem_limit: 512m
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3100/ready | grep -q ready"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+
+  promtail:
+    image: grafana/promtail:3.1.1
+    restart: unless-stopped
+    command: ["-config.file=/etc/promtail/config.yml"]
+    volumes:
+      - ../observability/promtail.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - app
+    mem_limit: 128m
+    pids_limit: 128
+
 networks:
   edge: {}
   app: {}
@@ -452,3 +567,7 @@ volumes:
   clickhouse_data:
   caddy_data:
   caddy_config:
+  prometheus_data:
+  alertmanager_data:
+  grafana_data:
+  loki_data:

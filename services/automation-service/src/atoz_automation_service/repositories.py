@@ -180,6 +180,15 @@ class ScheduledJobRepository(SqlAlchemyRepository[ScheduledJob, str]):
         )
         return (await self._session.scalars(stmt)).all()
 
+    async def count_due(self, now: datetime) -> int:
+        """Count enabled jobs whose ``next_run_at`` has passed (metrics)."""
+        stmt = select(func.count(ScheduledJob.id)).where(
+            ScheduledJob.status == "enabled",
+            ScheduledJob.next_run_at.is_not(None),
+            ScheduledJob.next_run_at <= now,
+        )
+        return int((await self._session.execute(stmt)).scalar_one())
+
     async def count_scoped(self, niche_id: str | None) -> int:
         stmt = select(func.count(ScheduledJob.id))
         if niche_id is None:

@@ -330,7 +330,7 @@ npm test          # vitest + axe a11y tests (all workspaces)
 npm run build     # next build (web + admin)
 ```
 
-The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), M3 (backend foundation), M4 (CMS business layer), M5 (affiliate engine), M6 (Pinterest business layer), M7 (SEO & discovery layer), M8 (analytics business layer), M9 (admin & operations layer), M10 (automation foundation + business executors), and M11 Phase 1 (production audit + infrastructure hardening, v0.12.0) are complete; M11 Phases C–F (secrets, observability, backup/DR, deployment) follow.
+The implementation roadmap is [14-implementation-roadmap.md](docs/architecture/14-implementation-roadmap.md); M1 (foundation), M2 (frontend foundation), M3 (backend foundation), M4 (CMS business layer), M5 (affiliate engine), M6 (Pinterest business layer), M7 (SEO & discovery layer), M8 (analytics business layer), M9 (admin & operations layer), M10 (automation foundation + business executors), M11 Phase 1 (production audit + infrastructure hardening, v0.12.0), and M11 Phase 2 (production reliability & launch: secrets, observability, backup/restore, deployment/rollback, reliability tests, launch audit, v0.13.0) are complete. Remaining production-time gates: 30-day reliability validation and the final Go/No-Go (tracked in [006-launch-audit.md](docs/operations/006-launch-audit.md)).
 
 ---
 

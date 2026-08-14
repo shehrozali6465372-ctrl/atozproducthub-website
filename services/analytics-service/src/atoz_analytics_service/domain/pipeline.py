@@ -55,16 +55,41 @@ class KafkaEventBackbone(EventBackbone):
     the broker being reachable.
     """
 
-    def __init__(self, *, bootstrap_servers: str, topic: str) -> None:
+    def __init__(
+        self,
+        *,
+        bootstrap_servers: str,
+        topic: str,
+        security_protocol: str = "PLAINTEXT",
+        sasl_mechanism: str = "PLAIN",
+        sasl_username: str = "",
+        sasl_password: str = "",
+    ) -> None:
         self._bootstrap_servers = bootstrap_servers
         self._topic = topic
+        self._security_protocol = security_protocol
+        self._sasl_mechanism = sasl_mechanism
+        self._sasl_username = sasl_username
+        self._sasl_password = sasl_password
         self._producer: Any | None = None
 
     async def _ensure_producer(self) -> Any:
         if self._producer is None:
             from aiokafka import AIOKafkaProducer
 
-            self._producer = AIOKafkaProducer(bootstrap_servers=self._bootstrap_servers)
+            kwargs: dict[str, object] = {
+                "bootstrap_servers": self._bootstrap_servers,
+                "security_protocol": self._security_protocol,
+            }
+            if self._sasl_username and self._sasl_password:
+                kwargs.update(
+                    {
+                        "sasl_mechanism": self._sasl_mechanism,
+                        "sasl_plain_username": self._sasl_username,
+                        "sasl_plain_password": self._sasl_password,
+                    }
+                )
+            self._producer = AIOKafkaProducer(**kwargs)
             await self._producer.start()
         return self._producer
 

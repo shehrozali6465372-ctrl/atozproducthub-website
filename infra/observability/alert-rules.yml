@@ -1,0 +1,57 @@
+# SLO alert rules (M11 Phase D). Gates: error rate < 1% (5xx share),
+# p95 latency < 500ms, queue liveness, failure-spike and service-down.
+groups:
+  - name: atoz-slos
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.service }} is unreachable for 5m"
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m])) by (service)
+            / clamp_min(sum(rate(http_requests_total[5m])) by (service), 1) > 0.01
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.service }} error rate above 1% for 10m"
+
+      - alert: SlowP95Latency
+        expr: |
+          histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service)) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.service }} p95 latency above 500ms for 10m"
+
+      - alert: QueueStarvation
+        expr: |
+          atoz_queue_items{state="queued"} > 0
+            and sum(rate(atoz_queue_items{state="done"}[10m])) == 0
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Queued work is not completing (worker starvation)"
+
+      - alert: QueueFailureSpike
+        expr: increase(atoz_queue_items{state="failed"}[15m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "More than 10 queue items failed in 15m"
+
+      - alert: StuckRunningJobs
+        expr: atoz_job_runs{status="running"} > 20
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High number of long-running job runs"

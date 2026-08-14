@@ -6,6 +6,84 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-08-14
+
+### Added
+
+- Implemented M11 Phase 2 (Task 23) — production reliability & launch:
+  Phases C–G implemented and verified; Phase H audit framework with the
+  30-day reliability and Go/No-Go gates defined (production-time
+  checkpoints). ADR-0013 freezes the decisions.
+- **Phase C — Secrets & data security:**
+  - `libs/backend-core` v0.13.0: the production secrets guard now also
+    rejects empty secret fields (`*_secret`, `*_token`, `*_password`,
+    `*_api_key`) when `APP_ENV=prod` — no silent defaults.
+  - New `atoz_backend_core.security.vault` — guarded `VaultSecretsClient`
+    resolving `vault://path?key=field` references (KV v2); strict no-op
+    when Vault is not configured; 7 unit tests with mocked transport.
+  - Store auth in `infra/docker/compose.prod.yml`: Redis `requirepass`,
+    ClickHouse user/password, Kafka SASL_PLAINTEXT (PLAIN mechanism with
+    JAAS config); analytics-service Kafka producer passes SASL credentials
+    to `AIOKafkaProducer` when configured.
+  - `infra/secrets/rotation.md` — rotation cadence, dual-publish window,
+    and incident rules for every secret class.
+- **Phase D — Observability:**
+  - Observability stack in the prod profile: otel-collector, Prometheus,
+    Alertmanager, Grafana, Loki, Promtail — configs as code under
+    `infra/observability/` (scrape config, SLO alert rules, alertmanager
+    routing, Grafana datasource/dashboard provisioning, OTel pipeline,
+    Loki retention, Promtail docker-log shipping).
+  - automation-service v0.13.0 queue/worker metrics: `atoz_queue_items`,
+    `atoz_job_runs`, `atoz_scheduled_jobs_due` gauges on `/metrics` with a
+    background refresh that degrades to a warning (2 new tests, incl.
+    failure resilience).
+  - SLO alert rules: ServiceDown, HighErrorRate (>1% 5xx), SlowP95Latency
+    (>500ms), QueueStarvation, QueueFailureSpike, StuckRunningJobs.
+- **Phase E — Backup & DR:**
+  - `infra/db/backup.sh` (custom-format `pg_dump`, retention, optional
+    S3-compatible upload) and `infra/db/restore.sh` (`pg_restore
+    --clean --if-exists`, latest-or-explicit dump).
+  - New CI `recovery` job: seed → backup → wipe → restore → verify data on
+    every push (tested restore, not configured restore).
+  - `docs/operations/003-disaster-recovery.md` — RPO/RTO table, DR runbook
+    (Postgres/Redis/Kafka/region scenarios), migration recovery.
+- **Phase F — Deployment & rollback:**
+  - `.github/workflows/deploy.yml` (manual dispatch staging/prod): GHCR
+    build+push, migration gate (`alembic upgrade head` before rollout),
+    compose rollout, smoke tests (`/healthz` + `/ready`), post-deploy
+    verification, and rollback-to-previous-tag on failure.
+  - `docs/operations/004-deployment-and-rollback.md` — environment
+    promotion, migration gate, database-dependency handling, activation
+    prerequisites (self-hosted runner + secrets).
+- **Phase G — Reliability & failure injection:**
+  - Pinterest client tests: 5xx retry + exhaustion, `httpx` timeout retry
+    then success (3 new tests).
+  - backend-core `test_readiness.py`: Redis-down readiness returns 503
+    degraded (2 new tests).
+  - `tools/loadtest/` — Locust reader/operator profile (dev-only, staging).
+  - `docs/operations/005-reliability-plan.md` — coverage matrix mapping
+    every failure class to its test/evidence.
+- **Phase H — Launch audit:** `docs/operations/006-launch-audit.md` —
+  security/observability/backup/deployment/performance evidence tables and
+  the 30-day reliability validation + Go/No-Go gate criteria.
+- Infrastructure guard (`tools/dev/check-infra.sh`) extended: observability
+  configs parse + required services/alerts present; backup/restore scripts
+  and deploy workflow exist.
+- `config/prod/env.template` documents the new store/observability
+  variables (REDIS_PASSWORD, CLICKHOUSE_USER/PASSWORD, KAFKA_SASL_*,
+  GRAFANA_ADMIN_*).
+
+### Changed
+
+- `libs/backend-core` v0.13.0 and `automation-service` v0.13.0; all
+  packages re-pinned to `atoz-backend-core==0.13.0`.
+- `infra/docker/compose.prod.yml`: store auth + observability stack
+  (24 services), healthchecks for Prometheus/Grafana/Loki.
+- `docs/architecture/14-implementation-roadmap.md`: Phase 13 / M8 DoD
+  progress for secrets, observability, backup/restore, deployment
+  scaffolding, and reliability tests (v0.13.0).
+- `README.md`: roadmap status line updated for M11 Phase 2.
+
 ## [0.12.0] - 2026-08-14
 
 ### Added

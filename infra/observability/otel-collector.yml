@@ -1,0 +1,21 @@
+# OpenTelemetry collector (M11 Phase D). Traces arrive via OTLP from the
+# services when OTEL_ENABLED=true; the export pipeline is wired to the
+# production trace backend in the deployment phase.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+processors:
+  batch: {}
+exporters:
+  debug:
+    verbosity: basic
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]

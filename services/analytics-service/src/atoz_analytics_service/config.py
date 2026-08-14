@@ -36,6 +36,12 @@ class Settings(BaseServiceSettings):
     kafka_topic: str = "atoz.analytics.events.v1"
     kafka_group_id: str = "analytics-service"
     kafka_enabled: bool = False  # production enables the real backbone
+    # SASL_PLAINTEXT auth (M11 Phase C — store security). Empty = plaintext
+    # internal broker (dev); production sets these via Vault-injected env.
+    kafka_security_protocol: str = "PLAINTEXT"
+    kafka_sasl_mechanism: str = "PLAIN"
+    kafka_sasl_username: str = ""
+    kafka_sasl_password: str = ""
     clickhouse_url: str = "http://clickhouse:8123"
     clickhouse_database: str = "atoz_analytics"
     clickhouse_table: str = "analytics_events"

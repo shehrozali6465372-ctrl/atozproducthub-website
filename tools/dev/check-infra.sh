@@ -109,6 +109,39 @@ if undocumented:
 if not Path("infra/docker/caddy/Caddyfile").exists():
     fail("infra/docker/caddy/Caddyfile is missing")
 
+# 6. Observability stack (Phase D) ---------------------------------------------
+obs_configs = [
+    Path("infra/observability") / name
+    for name in (
+        "prometheus.yml", "alert-rules.yml", "alertmanager.yml",
+        "otel-collector.yml", "loki.yml", "promtail.yml",
+    )
+]
+obs_configs += [
+    Path("infra/observability/grafana/provisioning/datasources/datasources.yml"),
+    Path("infra/observability/grafana/provisioning/dashboards/dashboards.yml"),
+]
+for cfg in obs_configs:
+    if not cfg.exists():
+        fail(f"missing observability config {cfg}")
+        continue
+    try:
+        yaml.safe_load(cfg.read_text())
+    except Exception as exc:  # noqa: BLE001
+        fail(f"invalid observability YAML {cfg}: {exc}")
+for svc in ("otel-collector", "prometheus", "alertmanager", "grafana", "loki", "promtail"):
+    if svc not in prod.get("services", {}):
+        fail(f"prod compose missing observability service '{svc}'")
+rules_text = Path("infra/observability/alert-rules.yml").read_text()
+for alert in ("ServiceDown", "HighErrorRate", "SlowP95Latency", "QueueStarvation"):
+    if alert not in rules_text:
+        fail(f"alert-rules.yml missing required alert '{alert}'")
+
+# 7. Backup/restore + deployment artifacts (Phases E/F) -------------------------
+for artifact in ("infra/db/backup.sh", "infra/db/restore.sh", ".github/workflows/deploy.yml"):
+    if not Path(artifact).exists():
+        fail(f"missing required artifact '{artifact}'")
+
 if violations:
     print(f"Infrastructure guard failed with {violations} violation(s).")
     sys.exit(1)

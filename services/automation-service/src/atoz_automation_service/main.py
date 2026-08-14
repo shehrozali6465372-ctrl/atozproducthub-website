@@ -7,6 +7,7 @@ from atoz_automation_service import __version__
 from atoz_automation_service.config import Settings, get_settings
 from atoz_automation_service.errors import register_exception_handlers
 from atoz_automation_service.executors import build_default_registry
+from atoz_automation_service.observability import start_metrics_task
 from atoz_automation_service.repositories import AutomationUnitOfWork
 from atoz_automation_service.routes import admin_router
 from atoz_automation_service.services import AutomationService
@@ -65,6 +66,13 @@ def create_app(
         settings, session_factory=session_factory, event_bus=event_bus
     )
     app.state.executor_registry = build_default_registry()
+    automation_service = app.state.automation_service
+    if automation_service is not None and settings.queue_metrics_enabled:
+        start_metrics_task(
+            app,
+            uow_factory=automation_service.uow_factory,
+            interval_seconds=settings.metrics_refresh_interval_seconds,
+        )
     register_exception_handlers(app)
     return app
 
