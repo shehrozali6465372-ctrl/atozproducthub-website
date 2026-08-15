@@ -54,6 +54,11 @@ venv/
 *.sqlite3
 *.db
 
+# Deploy-time artifacts (generated, never committed)
+infra/docker/compose.images.yml
+staging-recovery-report.md
+backups/
+
 # Misc
 .cache/
 .tmp/

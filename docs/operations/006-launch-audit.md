@@ -38,6 +38,10 @@
 
 - `.github/workflows/deploy.yml` (staging/prod, migration gate, smoke,
   rollback step) — scaffolded; activation requires Phase F runner+secrets.
+- M11 Phase 3 staging pipeline (v0.14.0): immutable SHA image tags,
+  migration gate on release images, fail-closed smoke, rollback drill,
+  staging recovery drill, staging smoke/failure/observability suites —
+  see `docs/operations/007-staging-validation.md` and ADR-0014.
 - Runbook: `docs/operations/004-deployment-and-rollback.md`.
 
 ## 5. Performance / SLO audit

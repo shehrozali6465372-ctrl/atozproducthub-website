@@ -2,8 +2,10 @@
 
 - **Date:** 2026-08-14
 - **Owner:** @atoz/platform
-- **Artifacts:** `infra/db/backup.sh`, `infra/db/restore.sh`, CI `recovery`
-  job (backup → wipe → restore → verify every push)
+- **Artifacts:** `infra/db/backup.sh`, `infra/db/restore.sh`,
+  `tools/db/staging-recovery-drill.sh` (full staging drill + RPO/RTO
+  evidence), CI `recovery` job (backup → wipe → restore → verify every
+  push)
 
 ## 1. RPO / RTO
 
@@ -38,6 +40,26 @@ The CI `recovery` job proves the pipeline end to end on every push:
 6. Assert the row and row count are back.
 
 If any step fails, CI is red — restore is a tested property, not a hope.
+
+## 3a. Staging recovery drill (M11 Phase 3, ADR-0014)
+
+`tools/db/staging-recovery-drill.sh` extends the CI drill for staging:
+
+1. Seed representative data (append-only drill tables with an idempotency
+   constraint).
+2. Backup via `infra/db/backup.sh`.
+3. Destroy the drill tables (simulated data loss).
+4. Restore via `infra/db/restore.sh`.
+5. Verify rows and that the idempotency constraint survived restore.
+6. Re-run migrations when `RUN_MIGRATIONS=1` (forward migration on
+   restored data).
+7. Verify application readiness when `STAGING_BASE_URL` is set.
+8. Write `staging-recovery-report.md` with restore duration and RPO/RTO
+   evidence.
+
+Live staging RTO actuals are a Phase H gate recorded against the 4-hour
+target; CI proves the restore path on every push, the staging host records
+real durations.
 
 ## 4. DR runbook
 

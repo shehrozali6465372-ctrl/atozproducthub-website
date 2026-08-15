@@ -1,0 +1,56 @@
+# Staging load-test baselines (Task 24 / M11 Phase 3, ADR-0014).
+#
+# These are TARGETS, not claims: local results must never be presented as
+# production capacity. Baselines are validated against a live staging
+# stack with the SLO dashboard running; a run is green only when every
+# scenario meets every threshold.
+#
+# The p95/error-rate gates match docs/operations/005-reliability-plan.md.
+version: 1
+environment: staging
+
+thresholds:
+  p50_latency_ms: 200
+  p95_latency_ms: 500
+  p99_latency_ms: 1000
+  error_rate_percent: 1.0
+  queue_depth_max: 1000
+  worker_processing_time_seconds: 300
+  database_connection_pressure_max: 100
+
+scenarios:
+  health_readiness:
+    users: 5
+    spawn_rate: 1
+    duration_s: 120
+    paths: ["/healthz", "/health", "/ready"]
+  public_content_reads:
+    users: 50
+    spawn_rate: 5
+    duration_s: 300
+    paths: ["/articles/{slug}", "/categories/{slug}", "/tags/{slug}"]
+  seo_search:
+    users: 20
+    spawn_rate: 2
+    duration_s: 300
+    paths: ["/search?q={query}"]
+  affiliate_redirect:
+    users: 10
+    spawn_rate: 1
+    duration_s: 300
+    paths: ["/go/{token}"]
+  analytics_ingestion:
+    users: 10
+    spawn_rate: 1
+    duration_s: 300
+    paths: ["/api/v1/collect/event"]
+  admin_read:
+    users: 5
+    spawn_rate: 1
+    duration_s: 180
+    paths: ["/api/v1/admin/analytics/summary", "/api/v1/admin/ops/overview"]
+  automation_queue:
+    users: 2
+    spawn_rate: 1
+    duration_s: 300
+    paths: ["/api/v1/admin/scheduled-jobs", "/api/v1/admin/job-runs"]

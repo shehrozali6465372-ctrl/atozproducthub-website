@@ -396,8 +396,15 @@ For every phase: Goal, Scope, Deliverables, Dependencies, Complexity, Risk, Succ
   stack (Prometheus/Alertmanager/Grafana/OTel/Loki/Promtail) with SLO
   alerts and queue metrics, automated backup + CI-tested restore drill,
   deployment/rollback workflow scaffold, and failure-injection tests.
-  Remaining: production rollout (Phase F runner + secrets), 30-day
-  reliability validation, and final Go/No-Go (Phase H gates).
+  M11 Phase 3 (v0.14.0, ADR-0014) implemented the staging deployment +
+  validation layer: production-like staging compose profile, manual
+  deploy pipeline (validate → build+push immutable tags → migration gate
+  → fail-closed smoke → rollback drill), migration-stream validation,
+  staging smoke/failure-recovery/observability/rollback/load-baseline
+  suites, and the security guard.
+  Remaining (requires live infrastructure + real credentials): staging
+  deployment execution, production rollout (Phase F runner + secrets),
+  30-day reliability validation, and final Go/No-Go (Phase H gates).
 - **Goal:** Production go-live: environments, security, monitoring, DR, and launch.
 - **Scope:** production IaC; Cloudflare CDN/WAF/DNS; Vercel + Fly.io deployments; Vault production; observability SLOs + alerting; backup/DR drills; load tests at target scale; security review; **Website Contract ratification**; runbooks in `docs/operations/`; go-live checklist.
 - **Deliverables:** production environment live; monitoring dashboards + alerts; DR plan + successful drill; load test report; security review sign-off; go-live checklist signed.
@@ -503,6 +510,11 @@ For every phase: Goal, Scope, Deliverables, Dependencies, Complexity, Risk, Succ
       automated backup with CI restore drill, deployment/rollback workflow
       scaffold, failure-injection tests (v0.13.0 — M11 Phase 2;
       docs/operations/002–006).
+- [x] Staging deployment + validation layer: staging compose profile,
+      deploy pipeline with immutable tags + migration gate + fail-closed
+      smoke + rollback drill, migration-stream validation, staging
+      smoke/failure-recovery/observability/rollback suites, security guard
+      (v0.14.0 — M11 Phase 3; docs/operations/007, ADR-0014).
 - [ ] Production environment live behind CDN/WAF; deploys green (Phases D–F).
 - [ ] Production rollout executed; staging + prod deploys green (Phase F
       runner + secrets).

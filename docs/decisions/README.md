@@ -30,6 +30,7 @@ Blueprint, API Contracts, UI/UX Design System, Implementation Roadmap).
 - ADR-0011 — Executor framework, service-to-service JWT, and single-scheduler Beat
 - ADR-0012 — Production infrastructure hardening (M11 Phase B)
 - ADR-0013 — Production reliability & launch (M11 Phase 2)
+- ADR-0014 — Staging deployment & production validation (M11 Phase 3)
 
 ## Template
 

@@ -28,6 +28,7 @@ quote-style = "double"
 
 [tool.pytest.ini_options]
 testpaths = [
+    "tests/staging",
     "apps/api/tests",
     "libs/backend-core/tests",
     "services/aios-bridge/tests",

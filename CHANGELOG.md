@@ -6,6 +6,93 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-08-15
+
+### Added
+
+- Implemented Task 24 / M11 Phase 3 — staging deployment & production
+  validation (ADR-0014). Feature development is complete; the remaining
+  production gates (30-day reliability validation, final Go/No-Go) are
+  tracked in `docs/operations/006-launch-audit.md` and require real
+  production infrastructure.
+- **Phase A — Staging environment:**
+  - `infra/docker/compose.staging.yml` — production-like staging overlay
+    (project identity `atozproducthub-staging`, `APP_ENV=staging`, staging
+    domains/CORS, placeholder AI OS endpoint). Reuses the production
+    hardening boundaries; no host ports, no credentials, no `name:`
+    override collisions.
+  - `config/staging/env.template` + `config/staging/README.md` — staging
+    configuration contract; every credential stays an injected variable.
+  - `tools/dev/check-staging.sh` — staging guard (service coverage,
+    overlay identity, no host ports, no credentials, template variables).
+- **Phase B — Deployment pipeline (`.github/workflows/deploy.yml`):**
+  - Manual-dispatch pipeline: `validate → build-push → deploy`; images
+    tagged with immutable commit SHA and pushed to GHCR.
+  - Migration gate runs against the release images *before* rollout;
+    fail-closed smoke after rollout; optional staging rollback drill;
+    automatic rollback to the previous tag on failure.
+  - Production deploys remain approval-gated (environment protection);
+    no auto-deploy to production.
+  - `tools/deploy/write-image-override.sh`, `run-migration-gate.sh`,
+    `staging-smoke.sh`, `rollback-test.sh`.
+- **Phase C — Database validation:**
+  - `tools/db/validate-migrations.sh` — single head per service stream,
+    version-table uniqueness, fresh-DB upgrade, schema smoke, tenancy
+    (`niche_id`) checks, unique/idempotency constraints,
+    downgrade/re-upgrade; wired into the CI `database` job.
+  - `tools/db/staging-recovery-drill.sh` — seed → backup → destroy →
+    restore → verify (RPO/RTO evidence, staging data only).
+- **Phase D — Staging smoke suite (`tests/staging/`):**
+  - `test_staging_smoke.py` — 24-item Phase D matrix (health/readiness,
+    auth/RBAC/MFA gates, `X-Niche-Id` isolation, content/affiliate/
+    Pinterest/SEO/analytics/automation contracts, AI OS Bridge validation,
+    audit logging, notifications, metrics, OTel, service-to-service auth).
+  - `test_failure_recovery.py` — 12 Phase E scenarios (store outages,
+    Pinterest timeouts/429/5xx, worker crash, duplicate delivery/webhook,
+    retry exhaustion, restart during job) verifying failure → detection →
+    retry/fallback → recovery → idempotency → terminal state.
+  - `test_observability_checks.py` — Phase G checks (Prometheus targets,
+    required metrics, alert rules, Grafana config, Loki logs, OTel, request
+    ID propagation, credential absence from logs).
+  - `test_load_baselines.py` + `tools/loadtest/baselines.yml` — Phase F
+    baseline thresholds (latency/throughput/error-rate budgets; local
+    results are not production capacity claims).
+  - `test_rollback_plan.py` — Phase I rollback plan validation.
+- **Phase G/H/I — Observability, recovery and rollback tooling:**
+  - `tools/observability/check-observability.sh` — automated observability
+    guard (Prometheus targets, metrics, alerts, Grafana, Loki, OTel).
+  - `tools/dev/check-security.sh` — secret patterns, template checks,
+    `npm audit`, artifact checks (no secrets in built artifacts).
+  - `tools/deploy/rollback-test.sh` — deploy → controlled failure →
+    rollback drill with DB compatibility, queue/idempotency and
+    row-count verification.
+- **Documentation:**
+  - `docs/decisions/0014-staging-validation.md` (ADR-0014) and
+    `docs/operations/007-staging-validation.md` — completed checks,
+    automated evidence, external blockers, required credentials/
+    infrastructure/DNS/Vault config, Go/No-Go prerequisites.
+  - `docs/operations/002-production-infrastructure.md`,
+    `003-disaster-recovery.md`, `004-deployment-and-rollback.md`, and the
+    operations README/index updated for the staging pipeline.
+  - `libs/backend-core` and `automation-service` versioned to 0.14.0;
+    all `atoz-backend-core==0.14.0` pins.
+
+### Fixed
+
+- Deploy pipeline ordering: the image override (`compose.images.yml`) is
+  now generated and shipped *before* the migration gate so the gate runs
+  inside the exact release images.
+- `tools/deploy/write-image-override.sh` no longer emits a `name:` key
+  that would silently switch the compose project identity from
+  `atozproducthub-staging`/`atozproducthub-prod`.
+- `tools/deploy/rollback-test.sh` now generates the immutable image
+  override per deployed tag and includes it in the compose command line.
+- `tools/deploy/staging-smoke.sh` passes `--env-file` to compose when
+  `ENV_FILE` is set (host envs are not exported over SSH).
+- `docs/operations/004-deployment-and-rollback.md`: corrected duplicated
+  step numbering.
+
+
 ## [0.13.0] - 2026-08-14
 
 ### Added

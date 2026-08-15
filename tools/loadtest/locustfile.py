@@ -14,6 +14,24 @@ providers).
 from locust import HttpUser, between, task
 
 
+class HealthUser(HttpUser):
+    """Probe traffic: healthz/health/ready (scenario 1 in baselines.yml)."""
+
+    wait_time = between(0.5, 2.0)
+
+    @task(1)
+    def healthz(self) -> None:
+        self.client.get("/healthz", name="healthz")
+
+    @task(1)
+    def health(self) -> None:
+        self.client.get("/health", name="health")
+
+    @task(1)
+    def ready(self) -> None:
+        self.client.get("/ready", name="ready")
+
+
 class ReaderUser(HttpUser):
     """Typical reader mix: browse articles, search, view products."""
 
@@ -56,3 +74,37 @@ class OperatorUser(HttpUser):
     @task(1)
     def audit_search(self) -> None:
         self.client.get("/api/v1/admin/audit?limit=20", name="admin_audit")
+
+
+class AnalyticsIngestionUser(HttpUser):
+    """First-party analytics event ingestion (mock payloads only)."""
+
+    wait_time = between(1.0, 4.0)
+
+    @task(1)
+    def collect_event(self) -> None:
+        self.client.post(
+            "/api/v1/collect/event",
+            json={
+                "event_id": "loadtest",
+                "event_type": "page_view",
+                "page_url": "/articles/loadtest",
+                "session_id": "loadtest",
+                "user_pseudo_id": "loadtest",
+            },
+            name="collect_event",
+        )
+
+
+class AutomationQueueUser(HttpUser):
+    """Operator reads for queue/job visibility (RBAC enforced)."""
+
+    wait_time = between(2.0, 6.0)
+
+    @task(2)
+    def scheduled_jobs(self) -> None:
+        self.client.get("/api/v1/admin/scheduled-jobs", name="admin_scheduled_jobs")
+
+    @task(1)
+    def job_runs(self) -> None:
+        self.client.get("/api/v1/admin/job-runs?limit=20", name="admin_job_runs")

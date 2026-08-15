@@ -1,0 +1,71 @@
+name: atozproducthub-staging
+
+# Staging deployment overlay (Task 24 / M11 Phase 3, ADR-0014).
+#
+# Usage: docker compose -f infra/docker/compose.prod.yml -f infra/docker/compose.staging.yml up -d
+# The production profile stays the single source of truth for hardening;
+# this overlay ONLY changes environment identity and staging defaults:
+#   * project name (atozproducthub-staging)
+#   * APP_ENV=staging on every first-party service
+#   * staging domains / CORS
+#   * staging AI OS endpoint placeholder (injected by the pipeline)
+# No credentials are defined here and no host ports are published: the
+# staging stack reuses the production security boundaries (edge-only
+# ingress, data-network isolation, non-root read-only containers).
+
+services:
+  proxy:
+    environment:
+      SITE_DOMAIN: staging.atozproducthub.dev
+      API_DOMAIN: api.staging.atozproducthub.dev
+      ADMIN_DOMAIN: admin.staging.atozproducthub.dev
+
+  api:
+    environment:
+      APP_ENV: staging
+      CORS_ORIGINS: '["https://staging.atozproducthub.dev"]'
+      PUBLIC_BASE_URL: https://staging.atozproducthub.dev
+
+  aios-bridge:
+    environment:
+      APP_ENV: staging
+      AIOS_CALLBACK_URL: http://aios-bridge:8000/bridge/jobs/status
+
+  content-service:
+    environment:
+      APP_ENV: staging
+      PUBLIC_BASE_URL: https://staging.atozproducthub.dev
+
+  affiliate-service:
+    environment:
+      APP_ENV: staging
+      PUBLIC_BASE_URL: https://staging.atozproducthub.dev
+
+  pinterest-service:
+    environment:
+      APP_ENV: staging
+      PINTEREST_OAUTH_REDIRECT_URI: https://admin.staging.atozproducthub.dev/pinterest/oauth/callback
+
+  seo-service:
+    environment:
+      APP_ENV: staging
+
+  analytics-service:
+    environment:
+      APP_ENV: staging
+
+  admin-service:
+    environment:
+      APP_ENV: staging
+
+  automation-service:
+    environment:
+      APP_ENV: staging
+
+  automation-worker:
+    environment:
+      APP_ENV: staging
+
+  automation-beat:
+    environment:
+      APP_ENV: staging

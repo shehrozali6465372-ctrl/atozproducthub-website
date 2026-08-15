@@ -15,9 +15,12 @@ and [07-security-boundaries.md](../architecture/07-security-boundaries.md).
 | Artifact | Purpose |
 |----------|---------|
 | `infra/docker/compose.prod.yml` | Production profile: hardened services, stores, edge, networks |
+| `infra/docker/compose.staging.yml` | Staging overlay (M11 Phase 3 / ADR-0014): identity-only override on the prod profile |
 | `infra/docker/caddy/Caddyfile` | TLS termination + security headers (Caddy 2) |
 | `tools/dev/check-infra.sh` | Static hardening guard (runs in CI quality job, no Docker) |
+| `tools/dev/check-staging.sh` | Staging overlay guard (services, APP_ENV, ports, secrets, template vars) |
 | `config/prod/env.template` | Documented production variables (secrets via Vault) |
+| `config/staging/env.template` | Documented staging variables (secrets via Vault) |
 | Dockerfiles (`USER appuser`) | Non-root runtime images for all first-party services |
 
 ## 2. Trust-zone networking
@@ -91,6 +94,21 @@ docker compose -f infra/docker/compose.prod.yml config -q
 # deploy (secrets injected by the pipeline / Vault)
 docker compose -f infra/docker/compose.prod.yml up -d
 ```
+
+## 8. Staging profile (M11 Phase 3, ADR-0014)
+
+Staging runs the **same** hardened profile with a thin identity overlay:
+
+```bash
+docker compose -f infra/docker/compose.prod.yml -f infra/docker/compose.staging.yml \
+  --env-file config/staging/env.template up -d
+```
+
+The overlay only sets the project name, `APP_ENV=staging`, staging domains,
+CORS, and the OAuth redirect URI. Every hardening rule (edge-only ingress,
+internal data network, non-root read-only containers, resource limits,
+`${VAR:?}` secrets) is inherited from the production profile — verified by
+`tools/dev/check-staging.sh` in CI and by the staging pytest suite.
 
 ## 8. Out of scope (later phases)
 

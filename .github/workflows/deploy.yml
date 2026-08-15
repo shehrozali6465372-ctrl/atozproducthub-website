@@ -1,12 +1,10 @@
 name: Deploy
 
-# M11 Phase F deployment workflow (Task 23). Activates on manual dispatch
-# (staging or prod). Requires:
-#   * a self-hosted runner tagged `deploy` with Docker Compose + repo checkout;
-#   * repository secrets: DEPLOY_HOST, DEPLOY_SSH_USER, DEPLOY_SSH_KEY,
-#     DEPLOY_ENV_FILE (base64 production env template), DATABASE_URL.
-# Rollback: on smoke-test failure the previous image tag is redeployed.
-
+# M11 Phase F / Task 24 staging deployment pipeline. Manual dispatch only;
+# production is additionally gated by the GitHub environment protection
+# rule (manual approval). The pipeline is fail-closed: any required service
+# that is unhealthy after rollout fails the run and triggers the rollback
+# step.
 on:
   workflow_dispatch:
     inputs:
@@ -21,13 +19,96 @@ on:
         required: false
         default: ""
         type: string
+      run_rollback_test:
+        description: "Run the staging rollback drill after deploy (staging only)"
+        required: false
+        default: false
+        type: boolean
+
 permissions:
   contents: read
   packages: write
 
 jobs:
+  validate:
+    name: Pre-deploy validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "libs/backend-core[dev]"
+          pip install -e "apps/api[dev]"
+          for s in services/*; do pip install -e "$s[dev]"; done
+      - name: Lint (ruff)
+        run: ruff check .
+      - name: Format check (ruff)
+        run: ruff format --check .
+      - name: Type check (mypy)
+        run: mypy
+      - name: No-AI guard
+        run: bash tools/dev/check-no-ai.sh
+      - name: Contract validation
+        run: bash tools/dev/check-contracts.sh
+      - name: Infrastructure guard
+        run: bash tools/dev/check-infra.sh
+      - name: Staging profile guard
+        run: bash tools/dev/check-staging.sh
+      - name: Observability guard
+        run: bash tools/observability/check-observability.sh
+      - name: Dependency vulnerabilities (pip-audit)
+        run: pip-audit
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: npm audit (production deps)
+        run: npm audit --omit=dev --audit-level=high
+      - name: Security guard
+        run: bash tools/dev/check-security.sh
+      - name: Validate staging compose profile
+        env:
+          DATABASE_URL: postgresql+asyncpg://atoz:ci-only@postgres:5432/atoz
+          POSTGRES_DB: atoz
+          POSTGRES_USER: atoz
+          POSTGRES_PASSWORD: ci-only
+          GATEWAY_JWT_SECRET: ci-only
+          CONTENT_JWT_SECRET: ci-only
+          AFFILIATE_JWT_SECRET: ci-only
+          PINTEREST_JWT_SECRET: ci-only
+          SEO_JWT_SECRET: ci-only
+          ANALYTICS_JWT_SECRET: ci-only
+          ADMIN_JWT_SECRET: ci-only
+          AUTOMATION_JWT_SECRET: ci-only
+          AFFILIATE_TOKEN_SIGNING_SECRET: ci-only
+          AIOS_API_KEY: ci-only
+          AIOS_BASE_URL: https://aios.invalid
+          AIOS_BRIDGE_INTERNAL_TOKEN: ci-only
+          ADMIN_INTERNAL_TOKEN: ci-only
+          SEO_EVENT_SECRET: ci-only
+          ANALYTICS_EVENT_SECRET: ci-only
+          ADMIN_EVENT_SECRET: ci-only
+          TYPESENSE_API_KEY: ci-only
+          PINTEREST_OAUTH_CLIENT_ID: ci-only
+          PINTEREST_OAUTH_STATE_SECRET: ci-only
+          REDIS_PASSWORD: ci-only
+          CLICKHOUSE_USER: atoz
+          CLICKHOUSE_PASSWORD: ci-only
+          KAFKA_SASL_USERNAME: atoz
+          KAFKA_SASL_PASSWORD: ci-only
+        run: |
+          docker compose -f infra/docker/compose.prod.yml config -q
+          docker compose -f infra/docker/compose.prod.yml -f infra/docker/compose.staging.yml config -q
+
   build-push:
     name: Build + push images (GHCR)
+    needs: validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,15 +145,19 @@ jobs:
 
   deploy:
     name: Deploy (${{ github.event.inputs.environment || 'staging' }})
-    needs: build-push
+    needs: [validate, build-push]
     runs-on: [self-hosted, deploy]
     environment: ${{ github.event.inputs.environment || 'staging' }}
     env:
       IMAGE_TAG: ${{ needs.build-push.outputs.tag }}
+      IMAGE_REPO: ghcr.io/${{ github.repository }}
+      ENV_NAME: ${{ github.event.inputs.environment || 'staging' }}
+      ENV_FILE: /opt/atozproducthub/.env.${{ github.event.inputs.environment || 'staging' }}
+      API_URL: ${{ (github.event.inputs.environment == 'prod' && 'https://api.atozproducthub.dev') || 'https://api.staging.atozproducthub.dev' }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Sync repository to host
+      - name: Sync repository and env file to host
         run: |
           install -m 600 -o "$(id -u)" /dev/null /tmp/deploy_key
           printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > /tmp/deploy_key
@@ -80,50 +165,81 @@ jobs:
           rsync -az --delete -e "ssh $SSHOPTS" ./ \
             "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/atozproducthub/"
           ssh $SSHOPTS "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            'printf %s "$DEPLOY_ENV_FILE" | base64 -d > /opt/atozproducthub/.env.prod && chmod 600 /opt/atozproducthub/.env.prod'
+            "printf '%s' \"\$DEPLOY_ENV_FILE\" | base64 -d > '$ENV_FILE' && chmod 600 '$ENV_FILE'"
         env:
           DEPLOY_ENV_FILE: ${{ secrets.DEPLOY_ENV_FILE }}
 
-      - name: Migration gate (upgrade head before rollout)
+      - name: Preserve previous release tag
+        run: |
+          SSHOPTS="-i /tmp/deploy_key -o StrictHostKeyChecking=no"
+          PREV="$(ssh $SSHOPTS "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            'cat /opt/atozproducthub/.last-deployed-tag 2>/dev/null || echo none')"
+          echo "PREVIOUS_TAG=${PREV}" >> "$GITHUB_ENV"
+          echo "Previous release tag: ${PREV}"
+
+      - name: Generate image override (immutable tag)
+        run: |
+          IMAGE_REPO="$IMAGE_REPO" IMAGE_TAG="$IMAGE_TAG" \
+            bash tools/deploy/write-image-override.sh
+          SSHOPTS="-i /tmp/deploy_key -o StrictHostKeyChecking=no"
+          scp $SSHOPTS infra/docker/compose.images.yml \
+            "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/atozproducthub/infra/docker/compose.images.yml"
+
+      - name: Database migration gate (all streams, release images)
         run: |
           SSHOPTS="-i /tmp/deploy_key -o StrictHostKeyChecking=no"
           ssh $SSHOPTS "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            'cd /opt/atozproducthub && \
-             docker compose -f infra/docker/compose.prod.yml --env-file .env.prod \
-               run --rm content-service \
-               sh -c "cd /srv/services/content-service && alembic -c db/migrations/alembic.ini upgrade head"'
+            "cd /opt/atozproducthub && ENV_FILE='$ENV_FILE' bash tools/deploy/run-migration-gate.sh"
 
-      - name: Rollout stack
+      - name: Rollout (immutable image tag)
         run: |
           SSHOPTS="-i /tmp/deploy_key -o StrictHostKeyChecking=no"
           ssh $SSHOPTS "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "cd /opt/atozproducthub && \
-             docker compose -f infra/docker/compose.prod.yml --env-file .env.prod \
-               up -d --no-deps --pull always --scale api=2"
-          echo "${{ needs.build-push.outputs.tag }}" > /tmp/last-deployed-tag
+             docker compose -f infra/docker/compose.prod.yml \
+               -f infra/docker/compose.staging.yml \
+               -f infra/docker/compose.images.yml \
+               --env-file '$ENV_FILE' up -d --no-deps --pull always --scale api=2"
+          ssh $SSHOPTS "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "echo '$IMAGE_TAG' > /opt/atozproducthub/.last-deployed-tag"
 
-      - name: Smoke tests (health + readiness)
+      - name: Wait for readiness + staging smoke (fail closed)
         run: |
           SSHOPTS="-i /tmp/deploy_key -o StrictHostKeyChecking=no"
           ssh $SSHOPTS "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            'set -e; for i in $(seq 1 30); do \
-               curl -fsS https://api.atozproducthub.dev/healthz && break || sleep 2; \
-             done; \
-             curl -fsS https://api.atozproducthub.dev/healthz'
+            "cd /opt/atozproducthub && STAGING_BASE_URL='$API_URL' DOCKER=1 ENV_FILE='$ENV_FILE' \
+               bash tools/deploy/staging-smoke.sh"
 
-      - name: Post-deploy verification
+      - name: Staging rollback drill (optional, staging only)
+        if: ${{ github.event.inputs.run_rollback_test == 'true' && (github.event.inputs.environment == '' || github.event.inputs.environment == 'staging') }}
         run: |
+          if [ -z "${{ env.PREVIOUS_TAG }}" ] || [ "${{ env.PREVIOUS_TAG }}" = "none" ]; then
+            echo "no previous release tag available; skipping rollback drill"
+            exit 0
+          fi
           SSHOPTS="-i /tmp/deploy_key -o StrictHostKeyChecking=no"
           ssh $SSHOPTS "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            'cd /opt/atozproducthub && docker compose -f infra/docker/compose.prod.yml --env-file .env.prod ps'
+            "cd /opt/atozproducthub && IMAGE_REPO='$IMAGE_REPO' PREV_TAG='${{ env.PREVIOUS_TAG }}' NEXT_TAG='$IMAGE_TAG' \
+               ENV_FILE='$ENV_FILE' STAGING_BASE_URL='$API_URL' \
+               bash tools/deploy/rollback-test.sh"
 
       - name: Rollback on failure
         if: failure()
         run: |
           SSHOPTS="-i /tmp/deploy_key -o StrictHostKeyChecking=no"
-          PREV_TAG="$(cat /tmp/last-deployed-tag 2>/dev/null || echo latest)"
-          echo "rolling back to image tag ${PREV_TAG}"
+          PREV_TAG="${{ env.PREVIOUS_TAG }}"
+          if [ -z "$PREV_TAG" ] || [ "$PREV_TAG" = "none" ]; then
+            echo "no previous release tag available; skipping rollback"
+            exit 0
+          fi
+          IMAGE_REPO="$IMAGE_REPO" IMAGE_TAG="$PREV_TAG" \
+            bash tools/deploy/write-image-override.sh
+          scp $SSHOPTS infra/docker/compose.images.yml \
+            "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/atozproducthub/infra/docker/compose.images.yml"
           ssh $SSHOPTS "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "cd /opt/atozproducthub && \
-             docker compose -f infra/docker/compose.prod.yml --env-file .env.prod \
-               up -d --no-deps --pull always"
+             docker compose -f infra/docker/compose.prod.yml \
+               -f infra/docker/compose.staging.yml \
+               -f infra/docker/compose.images.yml \
+               --env-file '$ENV_FILE' up -d --no-deps --pull always --scale api=2"
+          echo "Rollback to ${PREV_TAG} initiated"
