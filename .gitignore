@@ -73,3 +73,9 @@ backups/
 htmlcov/
 .ruff_cache/
 .mypy_cache/
+
+# Cloudflare Pages build output
+apps/*/out/
+apps/*/.vercel/
+.wrangler/
+.dev.vars
