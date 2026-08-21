@@ -7,5 +7,8 @@
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
-  }
+  },
+  "routes": [
+    { "pattern": "admin.atozproducthub.com", "custom_domain": true }
+  ]
 }
