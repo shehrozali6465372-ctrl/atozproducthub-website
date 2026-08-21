@@ -79,3 +79,4 @@ apps/*/out/
 apps/*/.vercel/
 .wrangler/
 .dev.vars
+.open-next/
