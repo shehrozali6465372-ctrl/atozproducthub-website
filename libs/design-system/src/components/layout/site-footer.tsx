@@ -17,14 +17,13 @@ export function SiteFooter({
   disclosure?: string;
 }) {
   return (
-    <footer className="border-t border-border bg-surface-1">
-      <Container className="py-12">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+    <footer className="border-t border-border/60 bg-surface-0">
+      <Container className="py-14">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-3">
             <Logo />
-            <p className="max-w-xs text-sm text-text-600">
-              Products worth knowing. Independent articles, tested recommendations,
-              and honest disclosure.
+            <p className="max-w-xs text-sm leading-relaxed text-text-600">
+              A premium product and content discovery platform across 10 specialized niches.
             </p>
           </div>
           {groups.map((group) => (
@@ -49,7 +48,7 @@ export function SiteFooter({
           <p className="max-w-3xl text-xs leading-relaxed text-text-400">
             {disclosure}
           </p>
-          <p className="mt-3 text-xs text-text-400">
+          <p className="mt-3 text-xs text-text-400 tracking-wide">
             © {new Date().getFullYear()} AtozProductHub. All rights reserved.
           </p>
         </div>

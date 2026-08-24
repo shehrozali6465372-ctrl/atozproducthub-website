@@ -6,40 +6,40 @@
 
 :root {
   color-scheme: light;
-  /* Color system (13 §3) — light values */
-  --primary-500: #4f46e5;
-  --primary-600: #4338ca;
-  --accent-500: #d97706;
+  /* Premium editorial palette — warm ivory + charcoal + champagne */
+  --primary-500: #c8a96b;
+  --primary-600: #b8944f;
+  --accent-500: #c8a96b;
   --success-500: #059669;
   --warning-500: #d97706;
   --danger-500: #dc2626;
   --info-500: #0284c7;
-  --surface-0: #ffffff;
-  --surface-1: #f8fafc;
-  --surface-2: #f1f5f9;
-  --border: #e2e8f0;
-  --text-900: #0f172a;
-  --text-600: #475569;
-  --text-400: #94a3b8;
+  --surface-0: #faf9f6;
+  --surface-1: #f3f1ec;
+  --surface-2: #ebe8e1;
+  --border: #e0dcd4;
+  --text-900: #171717;
+  --text-600: #57534e;
+  --text-400: #a8a29e;
 }
 
 .dark {
   color-scheme: dark;
-  /* Color system (13 §3) — dark values */
-  --primary-500: #818cf8;
-  --primary-600: #6366f1;
-  --accent-500: #f59e0b;
+  /* Premium editorial dark — warm charcoal, not navy */
+  --primary-500: #c8a96b;
+  --primary-600: #dbbe82;
+  --accent-500: #c8a96b;
   --success-500: #34d399;
   --warning-500: #fbbf24;
   --danger-500: #f87171;
   --info-500: #38bdf8;
-  --surface-0: #0b1220;
-  --surface-1: #111a2e;
-  --surface-2: #1a2540;
-  --border: #2a3754;
-  --text-900: #f1f5f9;
-  --text-600: #94a3b8;
-  --text-400: #64748b;
+  --surface-0: #1c1917;
+  --surface-1: #292524;
+  --surface-2: #33302c;
+  --border: #44403c;
+  --text-900: #faf9f6;
+  --text-600: #d6d3d1;
+  --text-400: #78716c;
 }
 
 /* Static theme values (no runtime swap needed) */

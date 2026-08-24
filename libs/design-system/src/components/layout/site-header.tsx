@@ -12,10 +12,7 @@ export interface NavItem {
   href: string;
 }
 
-/**
- * Public site header: logo, primary navigation, theme toggle. Mobile gets a
- * hamburger drawer below lg (13 §10, §15).
- */
+/** Premium editorial header — clean, calm, spacious. */
 export function SiteHeader({
   navItems,
   pathname = "",
@@ -26,11 +23,11 @@ export function SiteHeader({
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-surface-0/90 backdrop-blur">
-      <Container className="flex h-16 items-center gap-4">
+    <header className="sticky top-0 z-30 border-b border-border/60 bg-surface-0/80 backdrop-blur-md">
+      <Container className="flex h-[72px] items-center justify-between">
         <Logo />
-        <nav aria-label="Primary" className="hidden flex-1 lg:block">
-          <ul className="flex items-center gap-1">
+        <nav aria-label="Primary" className="hidden items-center lg:flex lg:absolute lg:left-1/2 lg:-translate-x-1/2">
+          <ul className="flex items-center gap-0.5">
             {navItems.map((item) => {
               const active = pathname === item.href;
               return (
@@ -39,10 +36,10 @@ export function SiteHeader({
                     href={item.href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "inline-flex h-10 items-center rounded-lg px-3 text-sm font-medium",
+                      "inline-flex h-10 items-center rounded-lg px-4 text-sm font-medium tracking-wide",
                       active
-                        ? "bg-primary-500/10 text-primary-500"
-                        : "text-text-600 hover:bg-surface-2 hover:text-text-900",
+                        ? "text-primary-500"
+                        : "text-text-600 hover:text-text-900",
                     )}
                   >
                     {item.label}
@@ -52,7 +49,7 @@ export function SiteHeader({
             })}
           </ul>
         </nav>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-1.5">
           <ThemeToggle />
           <button
             type="button"
@@ -74,16 +71,16 @@ export function SiteHeader({
         <nav
           id="mobile-nav"
           aria-label="Primary"
-          className="border-t border-border bg-surface-0 lg:hidden"
+          className="border-t border-border/60 bg-surface-0 lg:hidden"
         >
-          <Container className="py-3">
-            <ul className="space-y-1">
+          <Container className="py-4">
+            <ul className="space-y-0.5">
               {navItems.map((item) => (
                 <li key={item.href}>
                   <a
                     href={item.href}
                     onClick={() => setOpen(false)}
-                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-text-600 hover:bg-surface-2 hover:text-text-900"
+                    className="block rounded-lg px-4 py-3 text-[15px] font-medium tracking-wide text-text-600 hover:bg-surface-2 hover:text-text-900"
                   >
                     {item.label}
                   </a>

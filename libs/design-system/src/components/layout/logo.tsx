@@ -6,23 +6,31 @@ export interface LogoProps {
   className?: string;
 }
 
-/** Wordmark + discovery mark (13 §2). Text is brand-owned, not a final asset. */
+/** AtoZ Product Hub — premium editorial brand mark. */
 export function Logo({ href = "/", markOnly = false, className }: LogoProps) {
   return (
     <a
       href={href}
-      className={cn("inline-flex items-center gap-2 rounded-md", className)}
-      aria-label="AtozProductHub home"
+      className={cn("inline-flex items-center gap-2.5", className)}
+      aria-label="AtoZ Product Hub home"
     >
-      <span
+      <svg
         aria-hidden="true"
-        className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary-500 text-sm font-bold text-white"
+        viewBox="0 0 36 36"
+        fill="none"
+        className="size-9 shrink-0"
       >
-        A
-      </span>
+        <rect width="36" height="36" rx="8" className="fill-[#171717] dark:fill-[#faf9f6]" />
+        <text x="7" y="24" fontSize="15" fontWeight="700" fontFamily="Georgia, serif" className="fill-[#faf9f6] dark:fill-[#171717]" letterSpacing="-0.5">A</text>
+        <path d="M18 10 L26 26" stroke="#c8a96b" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M22 22 L26 26 L21 25" stroke="#c8a96b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <text x="23" y="30" fontSize="11" fontWeight="600" fontFamily="Georgia, serif" fill="#c8a96b">Z</text>
+      </svg>
       {markOnly ? null : (
-        <span className="text-lg font-bold tracking-tight text-text-900">
-          AtozProductHub
+        <span className="flex flex-col leading-none">
+          <span className="text-base font-bold tracking-tight text-text-900">
+            AtoZ <span className="font-normal text-primary-500">Product Hub</span>
+          </span>
         </span>
       )}
     </a>
