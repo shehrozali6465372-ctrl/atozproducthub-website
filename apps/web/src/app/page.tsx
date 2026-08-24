@@ -1,100 +1,118 @@
 import type { Metadata } from "next";
-import {
-  Badge,
-  Container,
-  ContentCard,
-  Hero,
-  NewsletterStrip,
-  SectionHeading,
-} from "@atoz/design-system";
-import { createApiClient } from "@/lib/api-client";
+import Link from "next/link";
+import { ArrowRight, BookOpen, ShieldCheck, Lightbulb } from "lucide-react";
+import { Container } from "@atoz/design-system";
+import { NICHES } from "@/lib/niches";
 import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: SITE.tagline,
-  description: SITE.tagline,
+  description:
+    "Explore carefully curated ideas, products and inspiration across 10 specialized niches.",
 };
 
-export default async function HomePage() {
-  const api = createApiClient();
-  const [articles, collections, pins] = await Promise.all([
-    api.content.listArticles(),
-    api.affiliate.listCollections(),
-    api.pinterest.listRecentPins(),
-  ]);
+const TRUST_ITEMS = [
+  { icon: BookOpen, label: "Carefully Researched" },
+  { icon: Lightbulb, label: "Thoughtful Recommendations" },
+  { icon: ShieldCheck, label: "Clear Affiliate Disclosure" },
+] as const;
 
+export default function HomePage() {
   return (
     <>
-      <Hero
-        eyebrow="Product discovery, done properly"
-        title="Products worth knowing."
-        description="Independent guides and tested recommendations from AtozProductHub — with clear disclosure on every monetized page."
-        primaryCta={{ label: "Explore articles", href: "/articles/sample-article" }}
-        secondaryCta={{ label: "Browse collections", href: "/collections/sample-collection" }}
-      />
+      {/* Hero */}
+      <section className="border-b border-border bg-surface-1">
+        <Container className="py-20 sm:py-28 lg:py-32">
+          <div className="mx-auto max-w-2xl text-center">
+            <h1 className="text-4xl font-bold tracking-tight text-text-900 sm:text-5xl lg:text-6xl">
+              Discover Your World.
+            </h1>
+            <p className="mt-5 text-lg leading-relaxed text-text-600 sm:text-xl">
+              Explore carefully curated ideas, products and inspiration across
+              {" "}
+              {NICHES.length} specialized niches.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <a
+                href="#niches"
+                className="inline-flex h-12 items-center gap-2 rounded-lg bg-primary-500 px-6 text-base font-semibold text-white transition-colors hover:bg-primary-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
+              >
+                Explore Niches
+                <ArrowRight aria-hidden="true" className="size-4" />
+              </a>
+              <a
+                href="/about"
+                className="inline-flex h-12 items-center rounded-lg border border-border bg-surface-0 px-6 text-base font-semibold text-text-900 transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
+              >
+                Learn About Us
+              </a>
+            </div>
+          </div>
+        </Container>
+      </section>
 
-      <Container className="py-12 sm:py-16">
-        <SectionHeading
-          level={2}
-          eyebrow="Guides"
-          title="Popular articles"
-          description="Research you can actually use, written plainly and honestly."
-        />
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {articles.map((article) => (
-            <ContentCard
-              key={article.slug}
-              title={article.title}
-              description={article.excerpt}
-              meta={`${article.category} · ${article.readTime}`}
-              href={`/articles/${article.slug}`}
-            />
-          ))}
-        </div>
-      </Container>
+      {/* 10-Niche Gateway */}
+      <section id="niches" className="scroll-mt-16">
+        <Container className="py-16 sm:py-24">
+          <div className="mx-auto max-w-xl text-center">
+            <p className="text-sm font-semibold uppercase tracking-widest text-primary-500">
+              Niches
+            </p>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-text-900 sm:text-3xl">
+              Explore Our Niches
+            </h2>
+            <p className="mt-3 text-text-600">
+              Choose a world that matches your interests.
+            </p>
+          </div>
 
-      <Container className="pb-12 sm:pb-16">
-        <SectionHeading
-          level={2}
-          eyebrow="Roundups"
-          title="Featured collections"
-          description="Curated, compared, and updated — our best lists for high-intent research."
-        />
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {collections.map((collection) => (
-            <ContentCard
-              key={collection.slug}
-              title={collection.title}
-              description={collection.description}
-              meta={`${collection.productCount} products compared`}
-              href={`/collections/${collection.slug}`}
-              badge={<Badge variant="accent">Affiliate</Badge>}
-            />
-          ))}
-        </div>
-      </Container>
+          <ul className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+            {NICHES.map((niche) => {
+              const Icon = niche.icon;
+              return (
+                <li key={niche.slug}>
+                  <Link
+                    href={`/categories/${niche.slug}`}
+                    className="group flex h-full flex-col rounded-xl border border-border bg-surface-1 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-500/30 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="mb-4 grid size-10 place-items-center rounded-lg"
+                      style={{ backgroundColor: `${niche.accent}18`, color: niche.accent }}
+                    >
+                      <Icon className="size-5" />
+                    </span>
+                    <h3 className="text-sm font-semibold leading-snug text-text-900">
+                      {niche.name}
+                    </h3>
+                    <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-text-600">
+                      {niche.description}
+                    </p>
+                    <span className="mt-auto inline-flex items-center gap-1 pt-4 text-xs font-medium text-primary-500 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                      Explore
+                      <ArrowRight aria-hidden="true" className="size-3" />
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </Container>
+      </section>
 
-      <Container className="pb-12 sm:pb-16">
-        <SectionHeading
-          level={2}
-          eyebrow="From Pinterest"
-          title="Latest pins"
-          description="Recent pin destinations — landing pages that match what you saved."
-        />
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {pins.map((pin) => (
-            <ContentCard
-              key={pin.slug}
-              title={pin.title}
-              meta={`${pin.board} · ${pin.saves} saves`}
-              href={`/landing/${pin.slug}`}
-              badge={<Badge variant="danger">Pinterest</Badge>}
-            />
-          ))}
-        </div>
-      </Container>
-
-      <NewsletterStrip />
+      {/* Trust strip */}
+      <section className="border-t border-border bg-surface-1">
+        <Container className="py-10">
+          <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 sm:gap-x-12">
+            {TRUST_ITEMS.map(({ icon: Icon, label }) => (
+              <li key={label} className="flex items-center gap-2 text-sm font-medium text-text-600">
+                <Icon aria-hidden="true" className="size-4 text-primary-500" />
+                {label}
+              </li>
+            ))}
+          </ul>
+        </Container>
+      </section>
     </>
   );
 }

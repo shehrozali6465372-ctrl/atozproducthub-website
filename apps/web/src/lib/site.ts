@@ -2,27 +2,24 @@ import type { FooterGroup, NavItem } from "@atoz/design-system";
 
 /** Site-wide brand constants (placeholder values until brand freeze). */
 export const SITE = {
-  name: "AtozProductHub",
-  tagline: "Products worth knowing.",
+  name: "AtoZ Product Hub",
+  tagline: "Discover Your World.",
   // Placeholder canonical origin; finalized by seo-service in a later phase.
   url: "https://atozproducthub.com",
 } as const;
 
 export const NAV_ITEMS: NavItem[] = [
   { label: "Home", href: "/" },
-  { label: "Articles", href: "/articles/sample-article" },
-  { label: "Products", href: "/products/sample-product" },
+  { label: "Niches", href: "/#niches" },
   { label: "About", href: "/about" },
+  { label: "Contact", href: "/contact" },
 ];
 
 export const FOOTER_GROUPS: FooterGroup[] = [
   {
-    title: "Explore",
+    title: "Discover",
     links: [
-      { label: "Home", href: "/" },
-      { label: "Articles", href: "/articles/sample-article" },
-      { label: "Products", href: "/products/sample-product" },
-      { label: "Collections", href: "/collections/sample-collection" },
+      { label: "Explore Niches", href: "/#niches" },
     ],
   },
   {
@@ -30,7 +27,6 @@ export const FOOTER_GROUPS: FooterGroup[] = [
     links: [
       { label: "About", href: "/about" },
       { label: "Contact", href: "/contact" },
-      { label: "Sitemap", href: "/sitemap" },
     ],
   },
   {
