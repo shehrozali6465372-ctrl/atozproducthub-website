@@ -451,7 +451,7 @@ export default function HomePage() {
                 Fewer, Better Things In Your Inbox.
               </h2>
               <p className="mt-4 text-sm sm:text-base leading-relaxed text-text-600">
-                Join 45,000+ tastemakers who receive our weekly curated dispatch spanning interior design, culinary tools, capsule style, and deep productivity.
+                Join readers who receive our weekly curated dispatch spanning interior design, culinary tools, capsule style, and deep productivity.
               </p>
 
               {subscribed ? (
@@ -505,9 +505,9 @@ export default function HomePage() {
                     <Icon className="size-5" aria-hidden="true" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold tracking-tight text-text-900">
+                    <h3 className="text-sm font-bold tracking-tight text-text-900">
                       {pillar.title}
-                    </h4>
+                    </h3>
                     <p className="mt-1.5 text-xs leading-relaxed text-text-600">
                       {pillar.description}
                     </p>
