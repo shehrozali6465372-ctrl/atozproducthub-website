@@ -58,20 +58,38 @@ export default async function ProductPage({ params }: PageProps) {
       />
       <div className="grid gap-10 lg:grid-cols-12">
         <div className="lg:col-span-7">
-          <div
-            aria-hidden="true"
-            className="flex aspect-square max-w-xl items-center justify-center rounded-xl border border-border bg-surface-2 text-text-400"
-          >
-            Gallery placeholder
-          </div>
-          <div className="mt-4 flex gap-2">
-            {["Angle 1", "Angle 2", "Angle 3"].map((label) => (
-              <span
-                key={label}
-                className="grid h-16 w-16 place-items-center rounded-lg border border-border bg-surface-1 text-[10px] text-text-400"
+          <div className="relative aspect-square max-w-xl overflow-hidden rounded-2xl border border-border bg-surface-2 shadow-sm">
+            {product.image ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={product.image}
+                alt={product.name}
+                className="size-full object-cover"
+              />
+            ) : (
+              <div
+                aria-hidden="true"
+                className="flex size-full items-center justify-center text-text-400"
               >
-                {label}
-              </span>
+                Product photography
+              </div>
+            )}
+          </div>
+          <div className="mt-4 flex gap-3">
+            {[1, 2, 3].map((angle) => (
+              <div
+                key={angle}
+                className="relative h-20 w-20 overflow-hidden rounded-xl border border-border/80 bg-surface-1 shadow-2xs hover:border-primary-500"
+              >
+                {product.image ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={product.image}
+                    alt={`${product.name} angle ${angle}`}
+                    className="size-full object-cover opacity-80 transition-opacity hover:opacity-100"
+                  />
+                ) : null}
+              </div>
             ))}
           </div>
         </div>
@@ -157,6 +175,7 @@ export default async function ProductPage({ params }: PageProps) {
             key={item.slug}
             title={item.name}
             description={item.summary}
+            image={item.image}
             meta={item.price}
             href={`/products/${item.slug}`}
           />

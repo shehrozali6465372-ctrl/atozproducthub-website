@@ -4,7 +4,7 @@
   "private": true,
   "description": "AtozProductHub public website (Next.js App Router). Presentation and routing only - no business logic.",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000 -H 0.0.0.0",
     "build": "next build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

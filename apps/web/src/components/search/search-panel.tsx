@@ -139,6 +139,7 @@ export function SearchPanel({
                     key={article.slug}
                     title={article.title}
                     description={article.excerpt}
+                    image={article.image}
                     meta={article.readTime}
                     href={`/articles/${article.slug}`}
                   />
@@ -160,6 +161,7 @@ export function SearchPanel({
                     key={product.slug}
                     title={product.name}
                     description={product.summary}
+                    image={product.image}
                     meta={product.price}
                     href={`/products/${product.slug}`}
                     badge={<Badge variant="accent">Affiliate</Badge>}

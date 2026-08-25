@@ -75,12 +75,23 @@ export default async function ArticlePage({ params }: PageProps) {
               {article.category} · {article.readTime} · Published {article.publishedAt}
             </p>
           </header>
-          <div
-            aria-hidden="true"
-            className="mt-8 flex aspect-[16/9] items-center justify-center rounded-xl border border-border bg-surface-2 text-text-400"
-          >
-            Featured image placeholder
-          </div>
+          {article.image ? (
+            <div className="mt-8 overflow-hidden rounded-2xl border border-border bg-surface-2 shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={article.image}
+                alt={article.title}
+                className="aspect-[16/9] w-full object-cover"
+              />
+            </div>
+          ) : (
+            <div
+              aria-hidden="true"
+              className="mt-8 flex aspect-[16/9] items-center justify-center rounded-2xl border border-border bg-surface-2 text-text-400"
+            >
+              Featured editorial image
+            </div>
+          )}
           <DisclosureBadge className="mt-6" />
           <Prose className="mt-8">
             {article.body.map((paragraph, index) => (
@@ -99,6 +110,7 @@ export default async function ArticlePage({ params }: PageProps) {
                 key={item.slug}
                 title={item.title}
                 description={item.excerpt}
+                image={item.image}
                 meta={item.readTime}
                 href={`/articles/${item.slug}`}
               />
@@ -123,6 +135,7 @@ export default async function ArticlePage({ params }: PageProps) {
                   key={product.slug}
                   title={product.name}
                   description={product.summary}
+                  image={product.image}
                   meta={product.price}
                   href={`/products/${product.slug}`}
                   badge={<Badge variant="accent">Sponsored</Badge>}

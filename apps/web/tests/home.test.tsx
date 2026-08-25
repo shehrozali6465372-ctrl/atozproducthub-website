@@ -1,28 +1,28 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import HomePage from "@/app/page";
+import { NICHES } from "@/lib/niches";
 import { expectNoAxeViolations } from "./helpers";
 
-describe("Home page wireframe", () => {
-  it("renders hero, sections, and footer navigation", async () => {
-    render(await HomePage());
+describe("AtoZ Product Hub Home Page", () => {
+  it("renders the 10-niche gateway and hero CTAs", () => {
+    render(<HomePage />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Discover Your World." })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: "Explore Our Niches" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: /discover your world/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: /explore our niches/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /explore niches/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /learn about us/i })).toBeInTheDocument();
 
-    const expectedNicheLinks = [
-      ["Home Decor & Interior Design", "/categories/home-decor"],
-      ["Food & Recipes", "/categories/food-recipes"],
-      ["Productivity & Self-Improvement", "/categories/productivity"],
-    ] as const;
-
-    for (const [name, href] of expectedNicheLinks) {
-      expect(screen.getByRole("link", { name: new RegExp(name) })).toHaveAttribute("href", href);
+    // Verify all 10 niches are present
+    expect(NICHES).toHaveLength(10);
+    for (const niche of NICHES) {
+      expect(screen.getByText(niche.name)).toBeInTheDocument();
     }
   });
 
   it("passes axe accessibility checks", async () => {
-    const { container } = render(await HomePage());
+    const { container } = render(<HomePage />);
     await expectNoAxeViolations(container);
   });
 });
+

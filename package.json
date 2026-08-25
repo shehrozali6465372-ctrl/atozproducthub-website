@@ -5,9 +5,10 @@
   "description": "AtozProductHub website \u2014 business layer only (monorepo root: dev tooling only).",
   "workspaces": [
     "apps/*",
-    "libs/design-system"
+    "libs/*"
   ],
   "scripts": {
+    "dev": "npm run dev --workspace @atoz/web",
     "dev:web": "npm run dev --workspace @atoz/web",
     "dev:admin": "npm run dev --workspace @atoz/admin",
     "build": "npm run build --workspaces --if-present",

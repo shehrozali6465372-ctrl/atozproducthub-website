@@ -1,0 +1,6 @@
+{
+  "name": "AtozProductHub",
+  "description": "Product-discovery and affiliate content hub with curated guides across 10 specialized niches.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -2210,20 +2210,16 @@ const liveAutomationClient = {
     automationFetchJson<LiveExecutorDto[]>("/api/v1/admin/executors").then((rows) => rows.map(toExecutor)),
 };
 
-const liveAdminApiClient: AdminApiClient = {
-  dashboard: mockAdminApiClient.dashboard,
-  analytics: liveAnalyticsClient,
-  pinterest: mockAdminApiClient.pinterest,
-  automation: liveAutomationClient,
-  content: liveContentClient,
-  affiliate: liveAffiliateClient,
-  ops: liveOpsClient,
-};
-
 export function createAdminApiClient(): AdminApiClient {
-  return CONTENT_API_BASE || AFFILIATE_API_BASE || ANALYTICS_API_BASE || ADMIN_API_BASE || AUTOMATION_API_BASE
-    ? liveAdminApiClient
-    : mockAdminApiClient;
+  return {
+    dashboard: mockAdminApiClient.dashboard,
+    analytics: ANALYTICS_API_BASE ? liveAnalyticsClient : mockAdminApiClient.analytics,
+    pinterest: mockAdminApiClient.pinterest,
+    automation: AUTOMATION_API_BASE ? liveAutomationClient : mockAdminApiClient.automation,
+    content: CONTENT_API_BASE ? liveContentClient : mockAdminApiClient.content,
+    affiliate: AFFILIATE_API_BASE ? liveAffiliateClient : mockAdminApiClient.affiliate,
+    ops: ADMIN_API_BASE ? liveOpsClient : mockAdminApiClient.ops,
+  };
 }
 
 export { PAGE_TITLES };
