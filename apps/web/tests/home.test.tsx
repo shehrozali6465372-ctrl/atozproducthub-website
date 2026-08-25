@@ -7,10 +7,18 @@ describe("Home page wireframe", () => {
   it("renders hero, sections, and footer navigation", async () => {
     render(await HomePage());
 
-    expect(screen.getByRole("heading", { level: 1, name: "Products worth knowing." })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: "Popular articles" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: "Featured collections" })).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: /kitchen gadgets guide/i }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { level: 1, name: "Discover Your World." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Explore Our Niches" })).toBeInTheDocument();
+
+    const expectedNicheLinks = [
+      ["Home Decor & Interior Design", "/categories/home-decor"],
+      ["Food & Recipes", "/categories/food-recipes"],
+      ["Productivity & Self-Improvement", "/categories/productivity"],
+    ] as const;
+
+    for (const [name, href] of expectedNicheLinks) {
+      expect(screen.getByRole("link", { name: new RegExp(name) })).toHaveAttribute("href", href);
+    }
   });
 
   it("passes axe accessibility checks", async () => {
