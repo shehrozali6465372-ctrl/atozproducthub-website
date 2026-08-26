@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Breadcrumbs, Container, SectionHeading } from "@atoz/design-system";
@@ -31,12 +32,12 @@ export default function CategoriesPage() {
             >
               {/* High-res Niche Image */}
               <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl bg-surface-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src={niche.image}
                   alt={niche.name}
-                  loading="lazy"
-                  className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.08]"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                 <div className="absolute top-3 left-3 rounded-full bg-black/40 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white backdrop-blur-md">

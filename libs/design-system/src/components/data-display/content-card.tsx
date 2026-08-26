@@ -69,4 +69,3 @@ export function ContentCard({
     </article>
   );
 }
-

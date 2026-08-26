@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import {
   Badge,
@@ -76,12 +77,14 @@ export default async function ArticlePage({ params }: PageProps) {
             </p>
           </header>
           {article.image ? (
-            <div className="mt-8 overflow-hidden rounded-2xl border border-border bg-surface-2 shadow-sm">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+            <div className="relative mt-8 overflow-hidden rounded-2xl border border-border bg-surface-2 shadow-sm">
+              <Image
                 src={article.image}
                 alt={article.title}
-                className="aspect-[16/9] w-full object-cover"
+                fill
+                priority
+                sizes="(max-width: 768px) 100vw, 80vw"
+                className="object-cover"
               />
             </div>
           ) : (

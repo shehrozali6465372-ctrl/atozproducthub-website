@@ -6,40 +6,40 @@
 
 :root {
   color-scheme: light;
-  /* Premium editorial palette — warm ivory + charcoal + champagne */
-  --primary-500: #c8a96b;
-  --primary-600: #b8944f;
-  --accent-500: #c8a96b;
+  /* AtoZ Editorial Luxe palette — warm ivory, charcoal, muted bronze. */
+  --primary-500: #a47752;
+  --primary-600: #8f6443;
+  --accent-500: #d9c8b5;
   --success-500: #059669;
   --warning-500: #d97706;
   --danger-500: #dc2626;
   --info-500: #0284c7;
-  --surface-0: #faf9f6;
-  --surface-1: #f3f1ec;
-  --surface-2: #ebe8e1;
-  --border: #e0dcd4;
+  --surface-0: #f7f5f0;
+  --surface-1: #ffffff;
+  --surface-2: #ede8df;
+  --border: #e5e1d9;
   --text-900: #171717;
-  --text-600: #57534e;
-  --text-400: #a8a29e;
+  --text-600: #6b6965;
+  --text-400: #a8a49e;
 }
 
 .dark {
   color-scheme: dark;
-  /* Premium editorial dark — warm charcoal, not navy */
-  --primary-500: #c8a96b;
-  --primary-600: #dbbe82;
-  --accent-500: #c8a96b;
+  /* Premium editorial dark — warm charcoal, not navy. */
+  --primary-500: #b68a60;
+  --primary-600: #d1af8c;
+  --accent-500: #d9c8b5;
   --success-500: #34d399;
   --warning-500: #fbbf24;
   --danger-500: #f87171;
   --info-500: #38bdf8;
-  --surface-0: #1c1917;
-  --surface-1: #292524;
-  --surface-2: #33302c;
-  --border: #44403c;
-  --text-900: #faf9f6;
-  --text-600: #d6d3d1;
-  --text-400: #78716c;
+  --surface-0: #111111;
+  --surface-1: #181817;
+  --surface-2: #201f1d;
+  --border: #302f2b;
+  --text-900: #f5f3ee;
+  --text-600: #a8a49d;
+  --text-400: #807d77;
 }
 
 /* Static theme values (no runtime swap needed) */

@@ -3,23 +3,24 @@ import type { FooterGroup, NavItem } from "@atoz/design-system";
 /** Site-wide brand constants (placeholder values until brand freeze). */
 export const SITE = {
   name: "AtoZ Product Hub",
-  tagline: "Discover Your World.",
+  tagline: "Premium editorial commerce for 10 focused worlds.",
   // Placeholder canonical origin; finalized by seo-service in a later phase.
   url: "https://atozproducthub.com",
 } as const;
 
 export const NAV_ITEMS: NavItem[] = [
   { label: "Home", href: "/" },
-  { label: "10 Niches", href: "/categories" },
+  { label: "Worlds", href: "/categories" },
   { label: "Articles", href: "/articles" },
   { label: "Products", href: "/products" },
+  { label: "Collections", href: "/collections/sample-collection" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
 ];
 
 export const FOOTER_GROUPS: FooterGroup[] = [
   {
-    title: "Explore Niches",
+    title: "Explore Worlds",
     links: [
       { label: "Home Decor & Living", href: "/categories/home-decor" },
       { label: "Food & Culinary Recipes", href: "/categories/food-recipes" },
@@ -34,6 +35,7 @@ export const FOOTER_GROUPS: FooterGroup[] = [
     links: [
       { label: "Editorial Guides", href: "/articles" },
       { label: "Tested Gear & Products", href: "/products" },
+      { label: "Collections", href: "/collections/sample-collection" },
       { label: "Editorial Standards", href: "/about" },
       { label: "Search Directory", href: "/search" },
     ],

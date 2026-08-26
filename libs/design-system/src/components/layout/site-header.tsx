@@ -23,13 +23,13 @@ export function SiteHeader({
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/70 bg-surface-0/90 backdrop-blur-md transition-colors duration-200">
-      <Container className="flex h-[76px] items-center justify-between gap-4">
+    <header className="sticky top-0 z-40 border-b border-border/70 bg-surface-0/90 backdrop-blur-xl transition-colors duration-200">
+      <Container className="flex h-[80px] items-center justify-between gap-4">
         <Logo size="md" />
 
         {/* Desktop Primary Nav */}
         <nav aria-label="Primary" className="hidden items-center lg:flex lg:absolute lg:left-1/2 lg:-translate-x-1/2">
-          <ul className="flex items-center gap-1 rounded-full border border-border/50 bg-surface-1/60 p-1 backdrop-blur-xs">
+          <ul className="flex items-center gap-1 rounded-full border border-border/60 bg-surface-1/80 p-1 shadow-[0_12px_40px_-28px_rgba(0,0,0,0.45)] backdrop-blur">
             {navItems.map((item) => {
               const active = pathname === item.href;
               return (
@@ -38,10 +38,10 @@ export function SiteHeader({
                     href={item.href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "inline-flex h-9 items-center rounded-full px-4 text-xs font-semibold uppercase tracking-[0.14em] transition-all",
+                      "inline-flex h-9 items-center rounded-full px-4 text-[11px] font-semibold uppercase tracking-[0.18em] transition-all",
                       active
-                        ? "bg-surface-0 text-text-900 shadow-xs ring-1 ring-border/60"
-                        : "text-text-600 hover:text-text-900 hover:bg-surface-0/60",
+                        ? "bg-text-900 text-surface-0 shadow-sm ring-1 ring-text-900/10 dark:bg-surface-0 dark:text-text-900"
+                        : "text-text-600 hover:bg-surface-0 hover:text-text-900",
                     )}
                   >
                     {item.label}
@@ -57,14 +57,14 @@ export function SiteHeader({
           <a
             href="/search"
             aria-label="Search articles and products"
-            className="grid size-9 place-items-center rounded-full border border-border/50 bg-surface-1/60 text-text-600 transition-colors hover:bg-surface-2 hover:text-text-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
+            className="grid size-10 place-items-center rounded-full border border-border/60 bg-surface-1/80 text-text-600 shadow-[0_10px_30px_-25px_rgba(0,0,0,0.5)] transition-colors hover:bg-surface-0 hover:text-text-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
           >
             <Search aria-hidden="true" className="size-4" />
           </a>
           <ThemeToggle />
           <button
             type="button"
-            className="grid size-9 place-items-center rounded-full border border-border/50 bg-surface-1/60 text-text-600 hover:bg-surface-2 hover:text-text-900 lg:hidden"
+            className="grid size-10 place-items-center rounded-full border border-border/60 bg-surface-1/80 text-text-600 shadow-[0_10px_30px_-25px_rgba(0,0,0,0.5)] hover:bg-surface-0 hover:text-text-900 lg:hidden"
             aria-expanded={open}
             aria-controls="mobile-nav"
             aria-label={open ? "Close navigation" : "Open navigation"}
@@ -84,7 +84,7 @@ export function SiteHeader({
         <nav
           id="mobile-nav"
           aria-label="Primary"
-          className="border-t border-border/70 bg-surface-0/95 backdrop-blur-lg lg:hidden animate-in fade-in slide-in-from-top-2 duration-200"
+          className="border-t border-border/70 bg-surface-0/96 backdrop-blur-xl lg:hidden animate-in fade-in slide-in-from-top-2 duration-200"
         >
           <Container className="py-5">
             <ul className="space-y-1">

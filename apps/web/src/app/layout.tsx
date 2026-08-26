@@ -24,14 +24,14 @@ export const metadata: Metadata = {
     template: `%s | ${SITE.name}`,
   },
   description:
-    "Independent product guides, tested recommendations, and honest disclosure. Products worth knowing.",
+    "Premium editorial commerce across 10 curated worlds: articles, products, collections, and visual discovery.",
   metadataBase: new URL(SITE.url),
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#4F46E5",
+  themeColor: "#F7F5F0",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

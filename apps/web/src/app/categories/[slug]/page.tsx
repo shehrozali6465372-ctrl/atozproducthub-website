@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, BookOpen, Compass, Sparkles } from "lucide-react";
@@ -50,7 +51,7 @@ export default async function CategoryPage({ params }: PageProps) {
 
   const title = niche?.name ?? category?.name ?? "Niche";
   const description = niche?.description ?? category?.description ?? "";
-  const nicheImage = niche?.image ?? "https://images.unsplash.com/photo-1616489953149-7551745cae7b?q=80&w=1200&auto=format&fit=crop";
+  const nicheImage = niche?.image ?? "/images/hero/editorial-hero.jpg";
 
   // Filter articles strictly for this niche/category
   const filteredArticles = articles.filter(
@@ -109,11 +110,13 @@ export default async function CategoryPage({ params }: PageProps) {
 
             <div className="lg:col-span-5">
               <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-border/70 bg-surface-2 shadow-sm">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src={nicheImage}
                   alt={title}
-                  className="size-full object-cover"
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 40vw"
+                  className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60" />
                 <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white/90">

@@ -1,2 +1,24 @@
 @import "tailwindcss";
 @import "@atoz/design-system/styles.css";
+
+@layer base {
+  body {
+    background:
+      radial-gradient(circle at top left, rgba(164, 119, 82, 0.08), transparent 32%),
+      radial-gradient(circle at 85% 5%, rgba(217, 200, 181, 0.24), transparent 24%),
+      linear-gradient(180deg, var(--color-surface-0) 0%, color-mix(in oklab, var(--color-surface-0) 90%, white) 100%);
+  }
+
+  #main-content {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .editorial-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in oklab, var(--color-border) 28%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--color-border) 28%, transparent) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.12), transparent 92%);
+  }
+}
