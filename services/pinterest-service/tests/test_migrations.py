@@ -72,13 +72,14 @@ def test_migrations_upgrade_downgrade_upgrade_on_clean_database(
         # Smoke INSERT/SELECT through the migrated schema.
         import asyncio
 
+        from atoz_pinterest_service.uuids import uuid7
+
         from atoz_pinterest_service.domain.entities import (
             PinterestAccount,
             PinterestBoard,
             PinterestNiche,
             PinterestPin,
         )
-        from atoz_pinterest_service.uuids import uuid7
 
         async def smoke() -> None:
             from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
