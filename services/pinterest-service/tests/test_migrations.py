@@ -6,12 +6,14 @@ re-upgrades to prove the migration is repeatable. The CI ``database`` job
 runs the same revision against a fresh PostgreSQL 16 database.
 """
 
+import asyncio
 from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
 
 from atoz_pinterest_service.config import get_settings
+from atoz_pinterest_service.uuids import uuid7
 
 MIGRATIONS_DIR = Path(__file__).resolve().parents[1] / "db" / "migrations"
 
@@ -70,10 +72,6 @@ def test_migrations_upgrade_downgrade_upgrade_on_clean_database(
         assert EXPECTED_TABLES <= tables, f"missing tables: {EXPECTED_TABLES - tables}"
 
         # Smoke INSERT/SELECT through the migrated schema.
-        import asyncio
-
-        from atoz_pinterest_service.uuids import uuid7
-
         from atoz_pinterest_service.domain.entities import (
             PinterestAccount,
             PinterestBoard,
