@@ -12,7 +12,7 @@ FORBIDDEN_DEPS="openai anthropic google-generativeai langchain langgraph llama-i
 
 violations=0
 
-# 1. Forbidden folder names inside implementation trees
+# 1. Forbidden folder names inside implementation trees (exclude .next build output)
 while IFS= read -r d; do
   base="$(basename "$d")"
   for f in $FORBIDDEN_DIRS; do
@@ -21,7 +21,7 @@ while IFS= read -r d; do
       violations=$((violations + 1))
     fi
   done
-done < <(find apps services libs tools infra config -type d 2>/dev/null)
+done < <(find apps services libs tools infra config -type d -not -path "*/.next/*" 2>/dev/null)
 
 # 2. Forbidden dependencies in manifests
 for manifest in pyproject.toml package.json apps/*/pyproject.toml apps/*/package.json services/*/pyproject.toml; do
