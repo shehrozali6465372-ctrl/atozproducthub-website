@@ -9,9 +9,9 @@ describe("AtoZ Product Hub Home Page", () => {
     render(<HomePage />);
 
     expect(screen.getByRole("heading", { level: 1, name: /discover your world/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: /explore our niches/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /explore niches/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /learn about us/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: /explore the editorial universe/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /explore worlds/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /view all worlds/i })).toBeInTheDocument();
 
     // Verify all 10 niches are present
     expect(NICHES).toHaveLength(10);
@@ -25,4 +25,3 @@ describe("AtoZ Product Hub Home Page", () => {
     await expectNoAxeViolations(container);
   });
 });
-

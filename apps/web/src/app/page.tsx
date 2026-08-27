@@ -221,7 +221,7 @@ export default function HomePage() {
                           <Icon aria-hidden="true" className="size-4" />
                         </div>
                         <div>
-                          <h3 className="text-sm font-semibold text-text-900">{pillar.title}</h3>
+                          <h2 className="text-sm font-semibold text-text-900">{pillar.title}</h2>
                           <p className="mt-1 text-xs leading-relaxed text-text-600">{pillar.description}</p>
                         </div>
                       </div>
