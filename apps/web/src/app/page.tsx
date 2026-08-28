@@ -237,7 +237,7 @@ export default function HomePage() {
 
               <div className="relative overflow-hidden rounded-[2rem] border border-border/80 bg-surface-1 p-3 shadow-[0_32px_80px_-44px_rgba(0,0,0,0.55)]">
                 <div className="grid gap-3 sm:grid-cols-[1.1fr_0.9fr]">
-                  <div className="relative overflow-hidden rounded-[1.6rem]">
+                  <div className="relative aspect-[16/9] sm:aspect-[4/3] overflow-hidden rounded-[1.6rem]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                   <Image
                       src={featuredArticle.image ?? NICHES[0].image}
@@ -443,7 +443,7 @@ export default function HomePage() {
           </div>
 
           <div className="mt-10 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-            <article className="overflow-hidden rounded-[2rem] border border-border/80 bg-surface-0 shadow-[0_28px_70px_-50px_rgba(0,0,0,0.5)]">
+            <article className="relative aspect-[16/9] overflow-hidden rounded-[2rem] border border-border/80 bg-surface-0 shadow-[0_28px_70px_-50px_rgba(0,0,0,0.5)]">
               <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <Image
