@@ -23,9 +23,7 @@ export function Logo({
       className={cn("group inline-flex items-center gap-3 transition-opacity hover:opacity-90", className)}
       aria-label="AtoZ Product Hub home"
     >
-      {/* The mark is a local SVG so branding is deterministic and does not depend on a third-party image host. */}
       <div className={cn("relative shrink-0 overflow-hidden rounded-[18px]", shellSizeClass)}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/brand/atoz-mark.svg" alt="" aria-hidden="true" className="size-full object-cover" />
       </div>
       {markOnly ? null : (
