@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, Star } from "lucide-react";
-import { Badge, Breadcrumbs, Container, ContentCard, SectionHeading } from "@atoz/design-system";
+import { Badge, Breadcrumbs, Container, SectionHeading } from "@atoz/design-system";
 import { createApiClient } from "@/lib/api-client";
 
 export const metadata: Metadata = {
@@ -17,20 +18,15 @@ export default async function ProductsPage() {
       <Container>
         <Breadcrumbs className="mb-8" items={[{ label: "Home", href: "/" }, { label: "Products" }]} />
         <div className="max-w-3xl">
-          <SectionHeading
-            eyebrow="Product Directory"
-            title="Curated Products & Gear"
-            description="Browse products available through our catalog. Commercial relationships are disclosed wherever they apply."
-          />
+          <SectionHeading eyebrow="Product Directory" title="Curated Products & Gear" description="Browse products available through our catalog. Commercial relationships are disclosed wherever they apply." />
         </div>
-
         {products.length > 0 ? (
           <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {products.map((product) => (
               <div key={product.slug} className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-border/80 bg-surface-0 p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary-500/50 hover:shadow-lg">
                 <div>
                   <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-surface-2">
-                    {product.image ? <img src={product.image} alt={product.name} loading="lazy" className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" /> : <div className="grid size-full place-items-center p-6 text-center text-sm text-text-400">Product image unavailable</div>}
+                    {product.image ? <Image src={product.image} alt={product.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="object-cover transition-transform duration-500 ease-out group-hover:scale-105" /> : <div className="grid size-full place-items-center p-6 text-center text-sm text-text-400">Product image unavailable</div>}
                   </div>
                   <div className="mt-4">
                     <div className="flex items-center justify-between gap-2">
