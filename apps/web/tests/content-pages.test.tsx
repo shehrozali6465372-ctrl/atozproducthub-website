@@ -17,13 +17,13 @@ describe("content page wireframes", () => {
     await expectNoAxeViolations(container);
   });
 
-  it("renders the product page with price and buy action", async () => {
+  it("renders the product page with price and honest purchase state", async () => {
     const { container } = render(
       await ProductPage({ params: Promise.resolve({ slug: "sample-product" }) }),
     );
     expect(screen.getByRole("heading", { level: 1, name: /chef's knife/i })).toBeInTheDocument();
     expect(screen.getByText("$89.00")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Buy now" })).toHaveAttribute("rel", "sponsored nofollow");
+    expect(screen.getByRole("button", { name: "No purchase link available" })).toBeDisabled();
     await expectNoAxeViolations(container);
   });
 
