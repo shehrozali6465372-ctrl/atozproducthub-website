@@ -31,7 +31,7 @@ export default async function CollectionsPage() {
                 key={collection.slug}
                 title={collection.title}
                 description={collection.description}
-                meta={`${collection.productCount} products`}
+                meta={collection.productCount > 0 ? `${collection.productCount} products` : "Catalog collection"}
                 href={`/collections/${collection.slug}`}
                 badge={<Badge variant="accent">Collection</Badge>}
               />
