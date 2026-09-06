@@ -12,7 +12,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Worlds", href: "/categories" },
   { label: "Articles", href: "/articles" },
   { label: "Products", href: "/products" },
-  { label: "Collections", href: "/collections/sample-collection" },
+  { label: "Collections", href: "/collections" },
   { label: "About", href: "/about" },
 ];
 
@@ -21,7 +21,7 @@ export const FOOTER_GROUPS: FooterGroup[] = [
     { label: "All Worlds", href: "/categories" },
     { label: "Editorial Guides", href: "/articles" },
     { label: "Products", href: "/products" },
-    { label: "Collections", href: "/collections/sample-collection" },
+    { label: "Collections", href: "/collections" },
   ]},
   { title: "Company", links: [
     { label: "About AtoZ", href: "/about" },
