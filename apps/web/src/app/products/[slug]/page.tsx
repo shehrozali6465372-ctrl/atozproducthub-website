@@ -43,7 +43,6 @@ export default async function ProductPage({ params }: PageProps) {
   ]);
   if (!product) notFound();
   const seo = await api.seo.getMetadata(`/products/${slug}`);
-
   const relatedProducts = related.filter((item) => item.slug !== product.slug).slice(0, 3);
 
   return (
@@ -53,7 +52,7 @@ export default async function ProductPage({ params }: PageProps) {
         className="mb-6"
         items={[
           { label: "Home", href: "/" },
-          { label: "Products", href: "/products/sample-product" },
+          { label: "Products", href: "/products" },
           { label: product.name },
         ]}
       />
@@ -61,106 +60,44 @@ export default async function ProductPage({ params }: PageProps) {
         <div className="lg:col-span-7">
           <div className="relative aspect-square max-w-xl overflow-hidden rounded-2xl border border-border bg-surface-2 shadow-sm">
             {product.image ? (
-              <Image
-                src={product.image}
-                alt={product.name}
-                fill
-                priority
-                sizes="(max-width: 1024px) 100vw, 48vw"
-                className="object-cover"
-              />
+              <Image src={product.image} alt={product.name} fill priority sizes="(max-width: 1024px) 100vw, 48vw" className="object-cover" />
             ) : (
-              <div
-                aria-hidden="true"
-                className="flex size-full items-center justify-center text-text-400"
-              >
-                Product photography
-              </div>
+              <div aria-hidden="true" className="flex size-full items-center justify-center text-text-400">Product photography unavailable</div>
             )}
-          </div>
-          <div className="mt-4 flex gap-3">
-            {[1, 2, 3].map((angle) => (
-              <div
-                key={angle}
-                className="relative h-20 w-20 overflow-hidden rounded-xl border border-border/80 bg-surface-1 shadow-2xs hover:border-primary-500"
-              >
-                {product.image ? (
-                  <Image
-                    src={product.image}
-                    alt={`${product.name} angle ${angle}`}
-                    fill
-                    sizes="80px"
-                    className="object-cover opacity-80 transition-opacity hover:opacity-100"
-                  />
-                ) : null}
-              </div>
-            ))}
           </div>
         </div>
         <div className="lg:col-span-5">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="accent">Affiliate product</Badge>
-            {product.rating !== undefined && (
-              <Badge variant="neutral">★ {product.rating.toFixed(1)} / 5</Badge>
-            )}
+            {product.rating !== undefined && <Badge variant="neutral">★ {product.rating.toFixed(1)} / 5</Badge>}
           </div>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-text-900">
-            {product.name}
-          </h1>
-          <p className="mt-2 font-mono text-2xl font-semibold text-text-900">
-            {product.price}
-          </p>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-text-900">{product.name}</h1>
+          <p className="mt-2 font-mono text-2xl font-semibold text-text-900">{product.price}</p>
           <p className="mt-4 text-text-600">{product.summary}</p>
           <div className="mt-6 flex flex-wrap gap-3">
             {product.buyUrl ? (
               <AffiliateBuyButton goUrl={product.buyUrl} />
             ) : (
-              <Button asChild size="lg">
-                <a href="#" rel="sponsored nofollow">
-                  Buy now
-                </a>
-              </Button>
+              <Button size="lg" disabled>No purchase link available</Button>
             )}
             <Button asChild variant="outline" size="lg">
-              <a href={`/collections/sample-collection`}>View collection</a>
+              <a href="/collections">View collections</a>
             </Button>
           </div>
           {product.disclosureRequired !== false && <DisclosureBadge className="mt-6" />}
           <div className="mt-8 grid gap-6 sm:grid-cols-2">
             {product.pros !== undefined && (
-              <Card title="Pros">
-                <ul className="space-y-2 text-sm text-text-600">
-                  {product.pros.map((pro) => (
-                    <li key={pro} className="flex gap-2">
-                      <span aria-hidden="true" className="text-success-500">
-                        +
-                      </span>
-                      {pro}
-                    </li>
-                  ))}
-                </ul>
-              </Card>
+              <Card title="Pros"><ul className="space-y-2 text-sm text-text-600">{product.pros.map((pro) => <li key={pro} className="flex gap-2"><span aria-hidden="true" className="text-success-500">+</span>{pro}</li>)}</ul></Card>
             )}
             {product.cons !== undefined && (
-              <Card title="Cons">
-                <ul className="space-y-2 text-sm text-text-600">
-                  {product.cons.map((con) => (
-                    <li key={con} className="flex gap-2">
-                      <span aria-hidden="true" className="text-danger-500">
-                        −
-                      </span>
-                      {con}
-                    </li>
-                  ))}
-                </ul>
-              </Card>
+              <Card title="Cons"><ul className="space-y-2 text-sm text-text-600">{product.cons.map((con) => <li key={con} className="flex gap-2"><span aria-hidden="true" className="text-danger-500">−</span>{con}</li>)}</ul></Card>
             )}
           </div>
           <Card className="mt-6" title="Frequently asked questions">
             <div className="space-y-3">
               {[
-                ["Is this product tested?", "Yes — the recommendation process is documented in our methodology."],
-                ["What is the return policy?", "Returns follow the retailer's policy; links are clearly disclosed."],
+                ["Is this product independently tested?", "This page does not claim independent testing unless the connected product data provides that evidence."],
+                ["What is the return policy?", "Returns follow the retailer's policy. Check the retailer's terms before purchasing."],
               ].map(([question, answer]) => (
                 <details key={question} className="rounded-lg border border-border bg-surface-0 p-3 text-sm">
                   <summary className="cursor-pointer font-medium text-text-900">{question}</summary>
@@ -172,19 +109,14 @@ export default async function ProductPage({ params }: PageProps) {
         </div>
       </div>
 
-      <SectionHeading level={2} className="mt-14" title="Related products" description="Compare before you buy." />
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {relatedProducts.map((item) => (
-          <ContentCard
-            key={item.slug}
-            title={item.name}
-            description={item.summary}
-            image={item.image}
-            meta={item.price}
-            href={`/products/${item.slug}`}
-          />
-        ))}
-      </div>
+      {relatedProducts.length > 0 && (
+        <>
+          <SectionHeading level={2} className="mt-14" title="Related products" description="Compare available catalog options before you buy." />
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {relatedProducts.map((item) => <ContentCard key={item.slug} title={item.name} description={item.summary} image={item.image} meta={item.price} href={`/products/${item.slug}`} />)}
+          </div>
+        </>
+      )}
     </Container>
   );
 }
