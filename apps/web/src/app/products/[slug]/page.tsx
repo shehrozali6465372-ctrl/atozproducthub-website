@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   Badge,
@@ -48,14 +49,7 @@ export default async function ProductPage({ params }: PageProps) {
   return (
     <Container className="py-8 sm:py-12">
       <SeoJsonLd seo={seo} />
-      <Breadcrumbs
-        className="mb-6"
-        items={[
-          { label: "Home", href: "/" },
-          { label: "Products", href: "/products" },
-          { label: product.name },
-        ]}
-      />
+      <Breadcrumbs className="mb-6" items={[{ label: "Home", href: "/" }, { label: "Products", href: "/products" }, { label: product.name }]} />
       <div className="grid gap-10 lg:grid-cols-12">
         <div className="lg:col-span-7">
           <div className="relative aspect-square max-w-xl overflow-hidden rounded-2xl border border-border bg-surface-2 shadow-sm">
@@ -75,48 +69,25 @@ export default async function ProductPage({ params }: PageProps) {
           <p className="mt-2 font-mono text-2xl font-semibold text-text-900">{product.price}</p>
           <p className="mt-4 text-text-600">{product.summary}</p>
           <div className="mt-6 flex flex-wrap gap-3">
-            {product.buyUrl ? (
-              <AffiliateBuyButton goUrl={product.buyUrl} />
-            ) : (
-              <Button size="lg" disabled>No purchase link available</Button>
-            )}
-            <Button asChild variant="outline" size="lg">
-              <a href="/collections">View collections</a>
-            </Button>
+            {product.buyUrl ? <AffiliateBuyButton goUrl={product.buyUrl} /> : <Button size="lg" disabled>No purchase link available</Button>}
+            <Button asChild variant="outline" size="lg"><Link href="/collections">View collections</Link></Button>
           </div>
           {product.disclosureRequired !== false && <DisclosureBadge className="mt-6" />}
           <div className="mt-8 grid gap-6 sm:grid-cols-2">
-            {product.pros !== undefined && (
-              <Card title="Pros"><ul className="space-y-2 text-sm text-text-600">{product.pros.map((pro) => <li key={pro} className="flex gap-2"><span aria-hidden="true" className="text-success-500">+</span>{pro}</li>)}</ul></Card>
-            )}
-            {product.cons !== undefined && (
-              <Card title="Cons"><ul className="space-y-2 text-sm text-text-600">{product.cons.map((con) => <li key={con} className="flex gap-2"><span aria-hidden="true" className="text-danger-500">−</span>{con}</li>)}</ul></Card>
-            )}
+            {product.pros !== undefined && <Card title="Pros"><ul className="space-y-2 text-sm text-text-600">{product.pros.map((pro) => <li key={pro} className="flex gap-2"><span aria-hidden="true" className="text-success-500">+</span>{pro}</li>)}</ul></Card>}
+            {product.cons !== undefined && <Card title="Cons"><ul className="space-y-2 text-sm text-text-600">{product.cons.map((con) => <li key={con} className="flex gap-2"><span aria-hidden="true" className="text-danger-500">−</span>{con}</li>)}</ul></Card>}
           </div>
           <Card className="mt-6" title="Frequently asked questions">
             <div className="space-y-3">
               {[
                 ["Is this product independently tested?", "This page does not claim independent testing unless the connected product data provides that evidence."],
                 ["What is the return policy?", "Returns follow the retailer's policy. Check the retailer's terms before purchasing."],
-              ].map(([question, answer]) => (
-                <details key={question} className="rounded-lg border border-border bg-surface-0 p-3 text-sm">
-                  <summary className="cursor-pointer font-medium text-text-900">{question}</summary>
-                  <p className="mt-2 text-text-600">{answer}</p>
-                </details>
-              ))}
+              ].map(([question, answer]) => <details key={question} className="rounded-lg border border-border bg-surface-0 p-3 text-sm"><summary className="cursor-pointer font-medium text-text-900">{question}</summary><p className="mt-2 text-text-600">{answer}</p></details>)}
             </div>
           </Card>
         </div>
       </div>
-
-      {relatedProducts.length > 0 && (
-        <>
-          <SectionHeading level={2} className="mt-14" title="Related products" description="Compare available catalog options before you buy." />
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {relatedProducts.map((item) => <ContentCard key={item.slug} title={item.name} description={item.summary} image={item.image} meta={item.price} href={`/products/${item.slug}`} />)}
-          </div>
-        </>
-      )}
+      {relatedProducts.length > 0 && <><SectionHeading level={2} className="mt-14" title="Related products" description="Compare available catalog options before you buy." /><div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{relatedProducts.map((item) => <ContentCard key={item.slug} title={item.name} description={item.summary} image={item.image} meta={item.price} href={`/products/${item.slug}`} />)}</div></>}
     </Container>
   );
 }
