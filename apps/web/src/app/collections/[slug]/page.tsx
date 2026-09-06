@@ -27,9 +27,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function AffiliateCollectionPage({ params }: PageProps) {
   const { slug } = await params;
   const api = createApiClient();
-  const [collection, products, collections] = await Promise.all([
+  const [collection, collections] = await Promise.all([
     api.affiliate.getCollection(slug),
-    api.affiliate.listProducts(),
     api.affiliate.listCollections(),
   ]);
   if (!collection) notFound();
@@ -53,36 +52,16 @@ export default async function AffiliateCollectionPage({ params }: PageProps) {
       />
       <DisclosureBadge className="mb-8" />
 
-      {products.length > 0 ? (
-        <>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {products.map((product, index) => (
-              <ContentCard
-                key={product.slug}
-                title={product.name}
-                description={product.summary}
-                meta={`${product.price}${product.rating !== undefined ? ` · ★ ${product.rating.toFixed(1)}` : ""}`}
-                href={`/products/${product.slug}`}
-                badge={<Badge variant="accent">#{String(index + 1).padStart(2, "0")}</Badge>}
-              />
-            ))}
-          </div>
-          <p className="mt-4 text-xs text-text-500">
-            The connected catalog currently exposes products at the catalog level; collection membership is shown only when supplied by the affiliate service.
-          </p>
-        </>
-      ) : (
-        <div className="rounded-2xl border border-border bg-surface-1 p-10 text-center">
-          <h2 className="font-serif text-2xl font-bold text-text-900">No products in this catalog yet</h2>
-          <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-text-600">
-            Products will appear when the connected affiliate catalog publishes inventory for this collection.
-          </p>
-        </div>
-      )}
+      <div className="rounded-2xl border border-border bg-surface-1 p-8 sm:p-10">
+        <h2 className="font-serif text-2xl font-bold text-text-900">Collection products are not yet exposed</h2>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-text-600">
+          The connected affiliate API currently exposes collection metadata separately from product membership. This page will list products when the source service provides an explicit collection-to-product relationship; it will not guess or mix catalog items into a collection.
+        </p>
+      </div>
 
       <Card className="mt-12" title="How we choose">
         <p className="max-w-2xl text-sm leading-relaxed text-text-600">
-          We organize products around the information available from the connected catalog. Pricing, merchant links, and commercial relationships are surfaced where the source data provides them; we do not present unsupported testing or performance claims.
+          We organize products around information supplied by the connected catalog. Pricing, merchant links, and commercial relationships are surfaced where the source data provides them; unsupported testing, performance, or membership claims are not presented.
         </p>
       </Card>
 
@@ -95,8 +74,9 @@ export default async function AffiliateCollectionPage({ params }: PageProps) {
                 key={item.slug}
                 title={item.title}
                 description={item.description}
-                meta={`${item.productCount} products`}
+                meta={item.productCount > 0 ? `${item.productCount} products` : "Catalog collection"}
                 href={`/collections/${item.slug}`}
+                badge={<Badge variant="accent">Collection</Badge>}
               />
             ))}
           </div>
