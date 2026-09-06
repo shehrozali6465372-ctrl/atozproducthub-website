@@ -5,15 +5,14 @@ import { NICHES } from "@/lib/niches";
 import { expectNoAxeViolations } from "./helpers";
 
 describe("AtoZ Product Hub Home Page", () => {
-  it("renders the 10-niche gateway and hero CTAs", () => {
+  it("renders the current premium gateway and hero CTAs", () => {
     render(<HomePage />);
 
-    expect(screen.getByRole("heading", { level: 1, name: /discover your world/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: /explore the editorial universe/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /explore worlds/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: /find what fits your world/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: /explore by world, not by algorithm/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /explore the worlds/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /view all worlds/i })).toBeInTheDocument();
 
-    // Verify all 10 niches are present
     expect(NICHES).toHaveLength(10);
     for (const niche of NICHES) {
       expect(screen.getAllByText(niche.name).length).toBeGreaterThan(0);
