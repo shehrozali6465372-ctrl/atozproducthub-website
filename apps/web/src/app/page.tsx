@@ -92,11 +92,11 @@ export default function HomePage() {
               <h2 className="mt-3 font-serif text-4xl font-bold tracking-tight text-text-900 sm:text-5xl">Start with what matters to you.</h2>
               <p className="mt-4 text-base leading-7 text-text-600">Ten focused categories make it easier to browse deeply while keeping discovery relevant.</p>
             </div>
-            <Link href="/worlds" className="inline-flex items-center text-sm font-semibold text-text-900 transition hover:text-primary-600">View all worlds <ArrowRight className="ml-2 size-4" /></Link>
+            <Link href="/categories" className="inline-flex items-center text-sm font-semibold text-text-900 transition hover:text-primary-600">View all worlds <ArrowRight className="ml-2 size-4" /></Link>
           </div>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {NICHES.map((niche, index) => (
-              <Link key={niche.slug} href={`/worlds/${niche.slug}`} className="group">
+              <Link key={niche.slug} href={`/categories/${niche.slug}`} className="group">
                 <article className="overflow-hidden rounded-2xl border border-border/80 bg-surface-1 transition duration-300 hover:-translate-y-1 hover:border-primary-500/30 hover:shadow-[0_25px_65px_-45px_rgba(0,0,0,0.7)]">
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <Image src={niche.image} alt={niche.name} fill sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 20vw" className="object-cover transition duration-500 group-hover:scale-105" />
