@@ -15,7 +15,7 @@ describe("AtoZ Product Hub Home Page", () => {
 
     expect(NICHES).toHaveLength(10);
     for (const niche of NICHES) {
-      expect(screen.getAllByText(niche.name).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(niche.shortName).length).toBeGreaterThan(0);
     }
   });
 
