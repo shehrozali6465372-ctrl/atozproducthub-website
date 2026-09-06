@@ -2,43 +2,34 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight, Clock } from "lucide-react";
 import { Badge, Breadcrumbs, Container, ContentCard, SectionHeading } from "@atoz/design-system";
-import { MOCK_ARTICLES } from "@/lib/mock-data";
+import { createApiClient } from "@/lib/api-client";
 
 export const metadata: Metadata = {
   title: "Editorial Articles & Guides",
-  description: "Browse all curated buying guides, masterclasses, and product breakdowns across our 10 niches.",
+  description: "Browse curated buying guides, practical explainers, and product-focused editorial across AtoZ Product Hub.",
 };
 
-export default function ArticlesPage() {
-  const featuredArticle = MOCK_ARTICLES[0];
-  const remainingArticles = MOCK_ARTICLES.slice(1);
+export default async function ArticlesPage() {
+  const articles = await createApiClient().content.listArticles();
+  const [featuredArticle, ...remainingArticles] = articles;
 
   return (
     <div className="py-8 sm:py-16">
       <Container>
         <Breadcrumbs className="mb-8" items={[{ label: "Home", href: "/" }, { label: "Articles" }]} />
-
         <div className="max-w-3xl">
           <SectionHeading
             eyebrow="Editorial Library"
             title="Articles & In-Depth Guides"
-            description="Deep, honest breakdowns of tools, essentials, and practices worth bringing into your life."
+            description="Practical breakdowns, useful ideas, and product-focused guides designed to help you make better-informed choices."
           />
         </div>
 
-        {/* Featured Editorial Spotlight */}
         {featuredArticle ? (
           <div className="mt-12 overflow-hidden rounded-3xl border border-border/80 bg-surface-0 shadow-sm transition-all duration-300 hover:shadow-xl lg:grid lg:grid-cols-12">
-            <div className="relative aspect-[16/10] lg:col-span-7 lg:aspect-auto">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={featuredArticle.image}
-                alt={featuredArticle.title}
-                className="size-full object-cover"
-              />
-              <div className="absolute top-4 left-4">
-                <Badge variant="accent">Featured Cover Story</Badge>
-              </div>
+            <div className="relative aspect-[16/10] bg-surface-2 lg:col-span-7 lg:aspect-auto">
+              {featuredArticle.image ? <img src={featuredArticle.image} alt={featuredArticle.title} className="size-full object-cover" /> : null}
+              <div className="absolute left-4 top-4"><Badge variant="accent">Featured</Badge></div>
             </div>
             <div className="flex flex-col justify-between p-6 sm:p-10 lg:col-span-5">
               <div>
@@ -47,52 +38,35 @@ export default function ArticlesPage() {
                   <span>·</span>
                   <span className="flex items-center gap-1"><Clock className="size-3.5" /> {featuredArticle.readTime}</span>
                 </div>
-                <h2 className="mt-4 font-serif text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight text-text-900">
-                  <Link href={`/articles/${featuredArticle.slug}`} className="hover:text-primary-500 transition-colors">
-                    {featuredArticle.title}
-                  </Link>
+                <h2 className="mt-4 font-serif text-2xl font-bold leading-tight text-text-900 sm:text-3xl lg:text-4xl">
+                  <Link href={`/articles/${featuredArticle.slug}`} className="transition-colors hover:text-primary-500">{featuredArticle.title}</Link>
                 </h2>
-                <p className="mt-4 text-sm sm:text-base leading-relaxed text-text-600">
-                  {featuredArticle.excerpt}
-                </p>
+                <p className="mt-4 text-sm leading-relaxed text-text-600 sm:text-base">{featuredArticle.excerpt}</p>
               </div>
-
               <div className="mt-8 flex items-center justify-between border-t border-border/60 pt-6">
                 <span className="text-xs text-text-400">Published {featuredArticle.publishedAt}</span>
-                <Link
-                  href={`/articles/${featuredArticle.slug}`}
-                  className="inline-flex items-center gap-2 rounded-full bg-text-900 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-surface-0 transition-all hover:bg-text-600"
-                >
-                  <span>Read Guide</span>
-                  <ArrowUpRight className="size-4" />
+                <Link href={`/articles/${featuredArticle.slug}`} className="inline-flex items-center gap-2 rounded-full bg-text-900 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-surface-0 transition-all hover:bg-text-600">
+                  Read guide <ArrowUpRight className="size-4" />
                 </Link>
               </div>
             </div>
           </div>
         ) : null}
 
-        {/* All Articles Grid */}
         <div className="mt-16">
           <div className="flex items-center justify-between border-b border-border/60 pb-4">
-            <h3 className="font-serif text-2xl font-bold text-text-900">All Published Guides</h3>
-            <span className="text-xs font-semibold uppercase tracking-wider text-text-400">
-              {MOCK_ARTICLES.length} Articles Total
-            </span>
+            <h3 className="font-serif text-2xl font-bold text-text-900">Published Guides</h3>
+            <span className="text-xs font-semibold uppercase tracking-wider text-text-400">{articles.length} {articles.length === 1 ? "article" : "articles"}</span>
           </div>
-
-          <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {remainingArticles.map((article) => (
-              <ContentCard
-                key={article.slug}
-                title={article.title}
-                description={article.excerpt}
-                image={article.image}
-                meta={`${article.readTime} · ${article.publishedAt}`}
-                href={`/articles/${article.slug}`}
-                badge={<Badge variant="neutral">{article.category}</Badge>}
-              />
-            ))}
-          </div>
+          {remainingArticles.length > 0 ? (
+            <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {remainingArticles.map((article) => (
+                <ContentCard key={article.slug} title={article.title} description={article.excerpt} image={article.image} meta={`${article.readTime} · ${article.publishedAt}`} href={`/articles/${article.slug}`} badge={<Badge variant="neutral">{article.category}</Badge>} />
+              ))}
+            </div>
+          ) : (
+            <p className="mt-8 rounded-2xl border border-border bg-surface-1 p-8 text-sm text-text-600">No additional published guides are available yet.</p>
+          )}
         </div>
       </Container>
     </div>
