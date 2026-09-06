@@ -4,21 +4,20 @@
 @layer base {
   body {
     background:
-      radial-gradient(circle at top left, rgba(164, 119, 82, 0.08), transparent 32%),
-      radial-gradient(circle at 85% 5%, rgba(217, 200, 181, 0.24), transparent 24%),
-      linear-gradient(180deg, var(--color-surface-0) 0%, color-mix(in oklab, var(--color-surface-0) 90%, white) 100%);
+      radial-gradient(circle at 8% 0%, color-mix(in oklab, var(--color-primary-500) 9%, transparent), transparent 30%),
+      radial-gradient(circle at 92% 4%, color-mix(in oklab, var(--color-accent-500) 15%, transparent), transparent 24%),
+      linear-gradient(180deg, var(--color-surface-0) 0%, var(--color-surface-0) 100%);
   }
 
-  #main-content {
-    position: relative;
-    isolation: isolate;
-  }
+  #main-content { position: relative; isolation: isolate; }
 
   .editorial-grid {
     background-image:
-      linear-gradient(to right, color-mix(in oklab, var(--color-border) 28%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in oklab, var(--color-border) 28%, transparent) 1px, transparent 1px);
-    background-size: 32px 32px;
-    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.12), transparent 92%);
+      linear-gradient(to right, color-mix(in oklab, var(--color-border) 34%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--color-border) 34%, transparent) 1px, transparent 1px);
+    background-size: 36px 36px;
+    mask-image: linear-gradient(180deg, rgba(0,0,0,.14), transparent 88%);
   }
+
+  .brand-glow { box-shadow: 0 30px 90px -55px color-mix(in oklab, var(--color-primary-500) 45%, transparent); }
 }
