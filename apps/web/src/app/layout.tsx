@@ -24,14 +24,41 @@ export const metadata: Metadata = {
     template: `%s | ${SITE.name}`,
   },
   description:
-    "Premium editorial commerce across 10 curated worlds: articles, products, collections, and visual discovery.",
+    "Discover curated products, practical guides, collections, and inspiration across thoughtfully organized worlds.",
   metadataBase: new URL(SITE.url),
+  applicationName: SITE.name,
+  category: "shopping",
+  alternates: {
+    canonical: "/",
+  },
+  icons: {
+    icon: [{ url: SITE.logo, type: "image/svg+xml" }],
+    apple: [{ url: SITE.logo, type: "image/svg+xml" }],
+  },
+  openGraph: {
+    type: "website",
+    siteName: SITE.name,
+    title: `${SITE.name} — ${SITE.tagline}`,
+    description:
+      "Curated products, useful ideas, guides, and collections designed for intentional discovery.",
+    url: SITE.url,
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary",
+    title: `${SITE.name} — ${SITE.tagline}`,
+    description:
+      "Curated products, useful ideas, guides, and collections designed for intentional discovery.",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#F7F5F0",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f6f7f4" },
+    { media: "(prefers-color-scheme: dark)", color: "#08110f" },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
