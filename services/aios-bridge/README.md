@@ -24,3 +24,16 @@ Contract §4.2, Folder Blueprint §5, API Contracts §12).
   import AI OS SDKs (enforced by `tools/dev/check-no-ai.sh`).
 - The AI OS is reached only through this service and the contracts in
   `libs/contracts/aios/`.
+
+
+## UCOS Layer 23 integration
+
+The Bridge targets the separate Universal Content Operating System repository.
+Layer 23 (Website Manager) is the website-management execution surface.
+
+- AtoZ -> services/aios-bridge -> UCOS /v1/jobs -> Layer 23.
+- UCOS exposes /heartbeat for bridge liveness.
+- Transport authentication uses the existing HMAC-SHA256 AIOS signing contract.
+- No UCOS source is copied into this repository and no AtoZ source is copied into UCOS.
+- Configure the AIOS base URL to the deployed UCOS gateway URL in staging/production; the local default is http://localhost:8000.
+- The integration accepts real content and article identifiers only; it does not fabricate content, publishing results, analytics, or external platform IDs.
