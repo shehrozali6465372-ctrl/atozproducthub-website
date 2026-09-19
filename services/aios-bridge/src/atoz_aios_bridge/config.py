@@ -15,7 +15,7 @@ class Settings(BaseServiceSettings):
     app_name: str = "AtozProductHub AI OS Bridge"
 
     # AI OS endpoint (the only outbound target of the business layer).
-    aios_base_url: str = "http://localhost:8100"
+    aios_base_url: str = "http://localhost:8000"
     aios_api_key: str = ""
     aios_timeout_seconds: float = 10.0
 
