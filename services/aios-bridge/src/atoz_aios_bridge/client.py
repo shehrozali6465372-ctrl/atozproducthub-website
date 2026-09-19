@@ -12,6 +12,7 @@ There is no AI logic here: no prompts, no models, no generation, no
 learning, no memory. This client only moves approved messages.
 """
 
+import json
 import logging
 import time
 from typing import Any
@@ -76,9 +77,17 @@ class AiosBridgeClient:
         attempt = 0
         while True:
             try:
-                response = self._client.request(
-                    method, path, json=body, headers=self._headers(method, path, body)
-                )
+                headers = self._headers(method, path, body)
+                if self._signer is not None:
+                    # Sign exactly the bytes sent on the wire.
+                    wire_body = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+                    response = self._client.request(
+                        method, path, content=wire_body, headers=headers
+                    )
+                else:
+                    response = self._client.request(
+                        method, path, json=body, headers=headers
+                    )
                 response.raise_for_status()
                 self._circuit.record_success()
                 return response
