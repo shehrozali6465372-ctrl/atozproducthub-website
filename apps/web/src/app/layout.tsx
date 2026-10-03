@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Inter, JetBrains_Mono, Lora } from "next/font/google";
 import {
   SiteFooter,
@@ -70,6 +71,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head>
         <ThemeScript />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-31917SCQH9"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {"window.dataLayer = window.dataLayer || [];\nfunction gtag(){dataLayer.push(arguments);}\ngtag('js', new Date());\ngtag('config', 'G-31917SCQH9');"}
+        </Script>
       </head>
       <body className="min-h-screen bg-surface-0 font-sans text-text-900 antialiased">
         <ThemeProvider>
