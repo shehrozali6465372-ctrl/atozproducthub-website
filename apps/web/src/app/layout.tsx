@@ -72,11 +72,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <ThemeScript />
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-31917SCQH9"
+          src="https://www.googletagmanager.com/gtag/js?id=G-VLR3BMRQ57"
           strategy="afterInteractive"
         />
         <Script id="google-analytics" strategy="afterInteractive">
-          {"window.dataLayer = window.dataLayer || [];\nfunction gtag(){dataLayer.push(arguments);}\ngtag('js', new Date());\ngtag('config', 'G-31917SCQH9');"}
+          {"window.dataLayer = window.dataLayer || [];\nfunction gtag(){dataLayer.push(arguments);}\ngtag('js', new Date());\ngtag('config', 'G-VLR3BMRQ57');"}
         </Script>
       </head>
       <body className="min-h-screen bg-surface-0 font-sans text-text-900 antialiased">
