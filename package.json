@@ -2,7 +2,7 @@
   "name": "atozproducthub-website",
   "version": "0.5.0",
   "private": true,
-  "description": "AtozProductHub website \u2014 business layer only (monorepo root: dev tooling only).",
+  "description": "AtozProductHub website — business layer only (monorepo root: dev tooling only).",
   "workspaces": [
     "apps/*",
     "libs/*"
@@ -14,7 +14,8 @@
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "start:web": "npm run start --workspace @atoz/web"
   },
   "engines": {
     "node": ">=20"
