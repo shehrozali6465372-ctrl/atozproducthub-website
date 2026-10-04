@@ -1,5 +1,6 @@
 """Application factory for content-service (M4 CMS business layer)."""
 
+import asyncio
 from pathlib import Path
 
 from alembic import command
@@ -19,7 +20,7 @@ from atoz_content_service.services import ContentService
 from atoz_content_service.storage import ContentStore, LocalContentStore
 
 
-def run_database_migrations() -> None:
+async def run_database_migrations() -> None:
     """Apply content-service migrations before serving traffic when a DB is configured."""
     settings = get_settings()
     if not settings.database_url:
@@ -27,7 +28,7 @@ def run_database_migrations() -> None:
     migrations_dir = Path(__file__).resolve().parents[2] / "db" / "migrations"
     config = Config(str(migrations_dir / "alembic.ini"))
     config.set_main_option("script_location", str(migrations_dir))
-    command.upgrade(config, "head")
+    await asyncio.to_thread(command.upgrade, config, "head")
 
 
 def build_session_factory(database_url: str) -> async_sessionmaker[AsyncSession]:
