@@ -24,7 +24,9 @@ def run_database_migrations() -> None:
     settings = get_settings()
     if not settings.database_url:
         return
-    config = Config(str(Path(__file__).resolve().parents[2] / "db" / "migrations" / "alembic.ini"))
+    migrations_dir = Path(__file__).resolve().parents[2] / "db" / "migrations"
+    config = Config(str(migrations_dir / "alembic.ini"))
+    config.set_main_option("script_location", str(migrations_dir))
     command.upgrade(config, "head")
 
 
