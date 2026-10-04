@@ -80,7 +80,7 @@ def create_app(
         settings, session_factory=session_factory, content_store=content_store
     )
     if settings.database_url:
-        app.add_event_handler("startup", run_database_migrations)
+        app.router.on_startup.append(run_database_migrations)
     register_exception_handlers(app)
     return app
 
