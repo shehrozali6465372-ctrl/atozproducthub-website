@@ -1,7 +1,10 @@
 """Application factory for content-service (M4 CMS business layer)."""
 
+import asyncio
 from pathlib import Path
 
+from alembic import command
+from alembic.config import Config
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -15,6 +18,15 @@ from atoz_content_service.errors import register_exception_handlers
 from atoz_content_service.routes import admin_router, public_router
 from atoz_content_service.services import ContentService
 from atoz_content_service.storage import ContentStore, LocalContentStore
+
+
+def run_database_migrations() -> None:
+    """Apply content-service migrations before serving traffic when a DB is configured."""
+    settings = get_settings()
+    if not settings.database_url:
+        return
+    config = Config(str(Path(__file__).resolve().parents[3] / "db" / "migrations" / "alembic.ini"))
+    command.upgrade(config, "head")
 
 
 def build_session_factory(database_url: str) -> async_sessionmaker[AsyncSession]:
@@ -73,3 +85,7 @@ def create_app(
 
 
 app = create_app()
+
+
+# Migrations are executed explicitly by the deployment/startup environment.
+# Keep the application import side-effect free for tests and tooling.
