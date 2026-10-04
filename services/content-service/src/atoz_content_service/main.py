@@ -1,6 +1,5 @@
 """Application factory for content-service (M4 CMS business layer)."""
 
-import asyncio
 from pathlib import Path
 
 from alembic import command
@@ -80,12 +79,10 @@ def create_app(
     app.state.content_service = build_content_service(
         settings, session_factory=session_factory, content_store=content_store
     )
+    if settings.database_url:
+        app.add_event_handler("startup", run_database_migrations)
     register_exception_handlers(app)
     return app
 
 
 app = create_app()
-
-
-# Migrations are executed explicitly by the deployment/startup environment.
-# Keep the application import side-effect free for tests and tooling.
