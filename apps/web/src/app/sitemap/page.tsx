@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Breadcrumbs, Container, SectionHeading } from "@atoz/design-system";
 import { createApiClient } from "@/lib/api-client";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Sitemap",
   description: "A human-readable index of every section of AtozProductHub.",
