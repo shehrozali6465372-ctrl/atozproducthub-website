@@ -90,7 +90,7 @@ export default function BlogAdmin() {
     setBusy(true);
     setMessage("");
     try {
-      const response = await fetch("/api/admin/session", {
+      const response = await fetch("/api/admin/auth/token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
