@@ -23,7 +23,7 @@ async function proxy(request: Request, context: { params: Promise<{ path: string
   }
 
   const { path } = await context.params;
-  const target = `${base}/${path.join("/")}`;
+  const target = `${base}/api/v1/admin/${path.join("/")}`;
   const incoming = new URL(request.url);
   const query = incoming.search;
   const headers = new Headers();
