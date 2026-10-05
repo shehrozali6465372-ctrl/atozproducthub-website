@@ -37,7 +37,8 @@ async function adminFetch<T>(
 }
 
 export default function BlogAdmin() {
-  const [token, setToken] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [niches, setNiches] = useState<Niche[]>([]);
   const [nicheId, setNicheId] = useState("");
@@ -92,11 +93,11 @@ export default function BlogAdmin() {
       const response = await fetch("/api/admin/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ username, password }),
       });
-      if (!response.ok) throw new Error("Could not create the admin session.");
+      if (!response.ok) { const data = await response.json().catch(() => null); throw new Error(typeof data?.error === "string" ? data.error : "Authentication failed."); }
       setAuthenticated(true);
-      setToken("");
+      setPassword("");
       setMessage("Session created. Loading CMS data…");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Authentication failed.");
@@ -170,19 +171,23 @@ export default function BlogAdmin() {
       <main className="mx-auto min-h-screen max-w-xl px-5 py-12">
         <h1 className="text-3xl font-bold">AtoZ Blog Admin</h1>
         <p className="mt-2 text-sm opacity-70">
-          Secure CMS console. Your access token is stored only in an HttpOnly session cookie.
+          Secure CMS console. Credentials are exchanged server-side; the access token is stored only in an HttpOnly session cookie.
         </p>
         <form onSubmit={signIn} className="mt-8 space-y-4 rounded-2xl border p-5">
           <label className="block text-sm font-medium">
-            Admin access token
+            Username
             <input
-              value={token}
-              onChange={(event) => setToken(event.target.value)}
-              type="password"
-              autoComplete="off"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              type="text"
+              autoComplete="username"
               required
               className="mt-2 w-full rounded-xl border px-3 py-3"
             />
+          <label className="block text-sm font-medium">
+            Password
+            <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="current-password" required className="mt-2 w-full rounded-xl border px-3 py-3" />
+          </label>
           </label>
           <button disabled={busy} className="w-full rounded-xl border px-4 py-3 font-semibold disabled:opacity-50">
             {busy ? "Signing in…" : "Open CMS"}
