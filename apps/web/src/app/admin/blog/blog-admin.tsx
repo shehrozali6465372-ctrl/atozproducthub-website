@@ -188,7 +188,6 @@ export default function BlogAdmin() {
             Password
             <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="current-password" required className="mt-2 w-full rounded-xl border px-3 py-3" />
           </label>
-          </label>
           <button disabled={busy} className="w-full rounded-xl border px-4 py-3 font-semibold disabled:opacity-50">
             {busy ? "Signing in…" : "Open CMS"}
           </button>
