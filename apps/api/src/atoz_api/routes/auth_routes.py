@@ -1,8 +1,9 @@
-"""Authentication endpoints (v1) — dev placeholder, Phase 5 = OIDC.
+"""Authentication endpoints (v1).
 
 JWT access/refresh tokens, session-backed revocation, and RBAC-protected
-identity resolution. In production the dev credential endpoint is disabled;
-OIDC replaces it in Phase 5 (Authentication).
+identity resolution. Production supports the configured human-admin
+credential and the UCOS machine credential; development keeps the local
+compatibility identity.
 """
 
 from typing import Any
@@ -65,10 +66,9 @@ def _tokens(
 
 @router.post(
     "/auth/token",
-    summary="Exchange credentials for tokens (dev placeholder)",
+    summary="Exchange configured credentials for tokens",
     responses={
         401: {"description": "Invalid credentials"},
-        501: {"description": "OIDC arrives in Phase 5"},
     },
 )
 async def issue_token(
@@ -76,23 +76,42 @@ async def issue_token(
     request: Request,
     settings: Settings = Depends(get_settings),
 ) -> dict[str, Any]:
-    """Issue access + refresh tokens for the dev identity (never in prod)."""
+    """Exchange a configured human or machine credential for tokens."""
     if settings.app_env == "prod":
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="OIDC authentication arrives in Phase 5.",
+        is_admin = (
+            settings.auth_admin_subject is not None
+            and payload.username == settings.auth_admin_subject
+            and settings.auth_admin_password_hash is not None
+            and verify_password(payload.password, settings.auth_admin_password_hash)
         )
-    if payload.username != settings.auth_dev_subject:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials.")
-    if not settings.auth_dev_password_hash or not verify_password(
-        payload.password, settings.auth_dev_password_hash
-    ):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials.")
+        is_ucos = (
+            settings.ucos_client_id is not None
+            and payload.username == settings.ucos_client_id
+            and settings.ucos_client_secret is not None
+            and payload.password == settings.ucos_client_secret
+        )
+        if is_admin:
+            subject = settings.auth_admin_subject
+            permissions = settings.auth_admin_permissions
+        elif is_ucos:
+            subject = f"ucos:{settings.ucos_client_id}"
+            permissions = settings.ucos_permissions
+        else:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials.")
+    else:
+        if payload.username != settings.auth_dev_subject:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials.")
+        if not settings.auth_dev_password_hash or not verify_password(
+            payload.password, settings.auth_dev_password_hash
+        ):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials.")
+        subject = payload.username
+        permissions = settings.auth_dev_permissions
 
     manager = _session_manager(request)
     session = await manager.create(
-        subject=payload.username,
-        permissions=settings.auth_dev_permissions,
+        subject=subject,
+        permissions=permissions,
         ttl_seconds=settings.jwt_refresh_ttl_seconds,
     )
     return _tokens(
