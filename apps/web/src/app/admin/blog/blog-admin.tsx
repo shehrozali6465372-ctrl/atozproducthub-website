@@ -184,6 +184,7 @@ export default function BlogAdmin() {
               required
               className="mt-2 w-full rounded-xl border px-3 py-3"
             />
+          </label>
           <label className="block text-sm font-medium">
             Password
             <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="current-password" required className="mt-2 w-full rounded-xl border px-3 py-3" />
