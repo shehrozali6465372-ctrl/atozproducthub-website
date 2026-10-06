@@ -3,7 +3,7 @@ import type { FooterGroup, NavItem } from "@atoz/design-system";
 export const SITE = {
   name: "AtoZ Product Hub",
   tagline: "Curated products, useful ideas, beautifully organized.",
-  url: "https://atozproducthub.com",
+  url: "https://atozproducthub.dev",
   logo: "/brand/atoz-mark.svg",
 } as const;
 
