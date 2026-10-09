@@ -17,7 +17,7 @@ from atoz_content_service.config import Settings, get_settings
 from atoz_content_service.errors import register_exception_handlers
 from atoz_content_service.routes import admin_router, public_router
 from atoz_content_service.services import ContentService
-from atoz_content_service.storage import ContentStore, LocalContentStore
+from atoz_content_service.storage import ContentStore, DatabaseContentStore, LocalContentStore
 
 
 async def run_database_migrations() -> None:
@@ -47,7 +47,12 @@ def build_content_service(
         if not settings.database_url:
             return None
         session_factory = build_session_factory(settings.database_url)
-    store = content_store or LocalContentStore(Path(settings.content_storage_dir))
+    if content_store is not None:
+        store = content_store
+    elif settings.app_env == "prod":
+        store = DatabaseContentStore(session_factory)
+    else:
+        store = LocalContentStore(Path(settings.content_storage_dir))
     publisher = EventPublisher(InMemoryEventBus(), publisher="content-service")
     return ContentService(
         uow_factory=lambda: ContentService.build_uow(session_factory),
