@@ -51,6 +51,8 @@ export default function BlogAdmin() {
   const [body, setBody] = useState("");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [tagIds, setTagIds] = useState<string[]>([]);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newTagName, setNewTagName] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -139,6 +141,48 @@ export default function BlogAdmin() {
     }
   }
 
+  async function createCategory(event: FormEvent) {
+    event.preventDefault();
+    if (!nicheId || !newCategoryName.trim()) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const category = await adminFetch<Category>(
+        "/categories",
+        { method: "POST", body: JSON.stringify({ name: newCategoryName.trim() }) },
+        nicheId,
+      );
+      setCategories((current) => [...current, category]);
+      setNewCategoryName("");
+      setMessage(`Category created: ${category.name}`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not create category.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createTag(event: FormEvent) {
+    event.preventDefault();
+    if (!nicheId || !newTagName.trim()) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const tag = await adminFetch<Tag>(
+        "/tags",
+        { method: "POST", body: JSON.stringify({ name: newTagName.trim() }) },
+        nicheId,
+      );
+      setTags((current) => [...current, tag]);
+      setNewTagName("");
+      setMessage(`Tag created: ${tag.name}`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not create tag.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function publish(articleId: string) {
     setBusy(true);
     setMessage("");
@@ -216,6 +260,19 @@ export default function BlogAdmin() {
           </select>
         </label>
         {selectedNiche && <p className="mt-2 text-xs opacity-60">Tenant: {selectedNiche.id}</p>}
+      </div>
+
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <form onSubmit={createCategory} className="space-y-3 rounded-2xl border p-4">
+          <h2 className="font-semibold">Manage categories</h2>
+          <input value={newCategoryName} onChange={(event) => setNewCategoryName(event.target.value)} required maxLength={200} placeholder="New category name" className="w-full rounded-xl border px-3 py-3" />
+          <button disabled={busy || !nicheId} className="rounded-xl border px-4 py-2 text-sm font-semibold disabled:opacity-50">Add category</button>
+        </form>
+        <form onSubmit={createTag} className="space-y-3 rounded-2xl border p-4">
+          <h2 className="font-semibold">Manage tags</h2>
+          <input value={newTagName} onChange={(event) => setNewTagName(event.target.value)} required maxLength={200} placeholder="New tag name" className="w-full rounded-xl border px-3 py-3" />
+          <button disabled={busy || !nicheId} className="rounded-xl border px-4 py-2 text-sm font-semibold disabled:opacity-50">Add tag</button>
+        </form>
       </div>
 
       <form onSubmit={createDraft} className="mt-6 space-y-4 rounded-2xl border p-5">
