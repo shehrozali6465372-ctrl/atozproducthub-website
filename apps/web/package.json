@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "start": "node .next/standalone/server.js"
+    "start": "if [ -f .next/standalone/server.js ]; then node .next/standalone/server.js; elif [ -f .next/standalone/apps/web/server.js ]; then node .next/standalone/apps/web/server.js; else echo 'Standalone Next.js server not found'; exit 1; fi"
   },
   "dependencies": {
     "@atoz/design-system": "0.2.0",
